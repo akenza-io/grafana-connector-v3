@@ -1,0 +1,12 @@
+version: "3.5"
+
+services:
+  grafana:
+    image: grafana/grafana:7.0.0
+    container_name: 'grafana-connector-grafana'
+    volumes:
+      - ./dist:/var/lib/grafana/plugins
+    env_file:
+      - config/grafana/grafana.config
+    ports:
+      - "3000:3000"

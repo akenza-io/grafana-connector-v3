@@ -1,0 +1,25 @@
+{
+    "name": "akenza-grafana-connector",
+    "version": "0.0.0",
+    "description": "Enables the Akenza Core as Data Source",
+    "scripts": {
+        "build": "grafana-toolkit plugin:build",
+        "test": "grafana-toolkit plugin:test",
+        "dev": "grafana-toolkit plugin:dev",
+        "watch": "grafana-toolkit plugin:dev --watch",
+        "deploy": "yarn build && rm -rf ./tmp && mkdir -p ./tmp/akenza-grafana-connector && cp -R ./dist/ ./tmp/akenza-grafana-connector/ && cd tmp && zip ./akenza-grafana-connector.zip -r ./akenza-grafana-connector/ && cd .. && rm -Rf ./tmp/akenza-grafana-connector"
+    },
+    "author": "David Giger",
+    "license": "Apache-2.0",
+    "dependencies": {
+        "@grafana/data": "^7.0.0",
+        "@grafana/runtime": "^7.0.0",
+        "@grafana/toolkit": "^7.0.0",
+        "@grafana/ui": "^7.0.0",
+        "@types/lodash": "^4.14.152",
+        "build-url": "^2.0.0"
+    },
+    "engines": {
+        "node": ">=12 <16"
+    }
+}
