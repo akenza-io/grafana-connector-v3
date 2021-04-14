@@ -22,12 +22,6 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
 
     constructor(props: Props) {
         super(props);
-        this.initializeViewProperties();
-        this.initializeSearchInputSubscription();
-        this.dataSourceId = this.props.datasource.id;
-    }
-
-    private initializeViewProperties() {
         const query = this.props.query;
         // initialize the select values and their options if the panel has been saved before, will initialize empty otherwise
         const deviceSelectValue = {
@@ -44,14 +38,14 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             value: query.dataKey || null,
         };
 
-        this.setState({
+        this.state = {
             deviceValue: deviceSelectValue,
             deviceOptions: [deviceSelectValue],
             topicValue: topicSelectValue,
             topicOptions: [topicSelectValue],
             dataKeyValue: dataKeySelectValue,
             dataKeyOptions: [dataKeySelectValue],
-        });
+        };
 
         this.loadDevices();
         // load topics and queries if the panel has been saved
@@ -59,6 +53,9 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             this.loadTopics(query.deviceId);
             this.loadKeys(query.deviceId, query.topic);
         }
+
+        this.initializeSearchInputSubscription();
+        this.dataSourceId = this.props.datasource.id;
     }
 
     private initializeSearchInputSubscription(): void {
