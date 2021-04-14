@@ -33,9 +33,12 @@ npx @grafana/toolkit plugin:sign --rootUrls https://akenza.io
 - [Grafana Tutorials](https://grafana.com/tutorials/) - Grafana Tutorials are step-by-step guides that help you make the most of Grafana
 - [Grafana UI Library](https://developers.grafana.com/ui) - UI components to help you build interfaces using Grafana Design System
 
+## Install the Plugin locally
 
+```
 docker run -d \
 -p 3000:3000 \
 --name=grafana \
 -e 'GF_INSTALL_PLUGINS=https://github.com/akenza-io/grafana-connector-v3/releases/download/v{VERSION}/akenza-core-datasource-{VERSION}.zip;akenza-core-datasource' \
-grafana/grafana:7.3.2
+grafana/grafana:7.5.4
+```
