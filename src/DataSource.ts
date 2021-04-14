@@ -6,17 +6,12 @@ import {
     DateTime,
     FieldType,
     MutableDataFrame,
-    dateTime, SelectableValue,
+    dateTime,
+    SelectableValue,
 } from '@grafana/data';
 import { BackendSrvRequest, getBackendSrv } from '@grafana/runtime';
 import buildUrl from 'build-url';
-import {
-    Device,
-    DeviceData,
-    DeviceList, Organization,
-    OrganizationList,
-    TimeSeriesData
-} from './types/AkenzaTypes';
+import { Device, DeviceData, DeviceList, Organization, OrganizationList, TimeSeriesData } from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
 import { HttpErrorPromise, HttpPromise } from './types/Utils';
 
@@ -31,7 +26,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
     async testDatasource() {
         const params = {
             size: 1,
-            minimal: true
+            minimal: true,
         };
 
         return this.doRequest('/v3/organizations', 'GET', params).then(
@@ -70,7 +65,11 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                         refId: target.refId,
                         fields: [
                             { name: 'Time', values: time, type: FieldType.time },
-                            { name: target.device?.name + ' - ' + target.dataKey, values: data, type: FieldType.number },
+                            {
+                                name: target.device?.name + ' - ' + target.dataKey,
+                                values: data,
+                                type: FieldType.number,
+                            },
                         ],
                     })
                 );
@@ -105,8 +104,8 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             (organization) => {
                 const params = {
                     organizationId: organization.id,
-                    type: "DEVICE",
-                    search: searchString
+                    type: 'DEVICE',
+                    search: searchString,
                 };
 
                 return this.doRequest('/v3/assets', 'GET', params).then(
@@ -125,13 +124,13 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
     }
 
     async getDevicesForOptions(search: string): Promise<Array<SelectableValue<string>>> {
-        console.log(search)
+        console.log(search);
 
         return this.getOrganization().then(
             (organization) => {
                 const params = {
                     organizationId: organization.id,
-                    type: "DEVICE"
+                    type: 'DEVICE',
                 };
 
                 return this.doRequest('/v3/assets', 'GET', params).then(
@@ -142,7 +141,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                             deviceSelectOptions.push({ label: asset.name, value: asset.id, asset: asset });
                         }
 
-                        console.log(deviceSelectOptions)
+                        console.log(deviceSelectOptions);
 
                         return deviceSelectOptions;
                     },
@@ -190,7 +189,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
     private async getOrganization(): Promise<Organization> {
         const params = {
             size: 1,
-            minimal: true
+            minimal: true,
         };
 
         return this.doRequest('/v3/organizations', 'GET', params).then(
@@ -223,7 +222,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         } else if (error.statusText && error.data?.message) {
             return error.status + ' ' + error.statusText + ': ' + error.data.message;
         } else {
-            return 'An unknown error occurred, please contact Akenza Support: support@akenza.com';
+            return 'An unknown error occurred, please contact Akenza Support: support@akenza.io';
         }
     }
 }
