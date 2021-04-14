@@ -42,7 +42,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
                         inputWidth={27}
                         onChange={this.onBaseUrlChange}
                         value={jsonData.baseUrl || ''}
-                        placeholder="e.g. https://api.core.akenza.io"
+                        placeholder="e.g. https://api.akenza.io"
                     />
                 </div>
                 <div className="gf-form">

@@ -1,17 +1,17 @@
-export interface Asset {
+export interface Device {
     id: string;
     name: string;
     // no other properties since the API call is made using the fields param
 }
 
-export interface AssetList {
+export interface DeviceList {
     offset: number;
     limit: number;
-    total: number;
-    data: Asset[];
+    totalElements: number;
+    content: Device[];
 }
 
-export interface AssetData {
+export interface DeviceData {
     deviceId: string;
     timestamp: string;
     topic: string;
@@ -23,15 +23,13 @@ export interface TimeSeriesData {
     key: string;
 }
 
-export interface Environment {
-    id: string;
-    name: string;
+export interface OrganizationList {
+    content: Organization[];
     // other properties omitted
 }
 
-export interface EnvironmentList {
-    offset: number;
-    limit: number;
-    total: number;
-    data: Environment[];
+export interface Organization {
+    id: string;
+    name: string;
+    // other properties omitted
 }

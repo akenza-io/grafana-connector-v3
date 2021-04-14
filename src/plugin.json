@@ -4,13 +4,13 @@
     "id": "akenza-core-datasource",
     "metrics": true,
     "info": {
-        "description": "Enables the Akenza Core as Data Source",
+        "description": "Enables Akenza as Data Source",
         "author": {
             "name": "David Giger",
             "url": "https://akenza.com"
         },
         "keywords": [
-            "akenza core",
+            "akenza.io",
             "akenza",
             "IoT"
         ],
@@ -35,5 +35,17 @@
     "dependencies": {
         "grafanaVersion": "7.x.x",
         "plugins": []
-    }
+    },
+    "routes": [
+        {
+            "path": "akenza",
+            "url": "{{ .JsonData.baseUrl }}",
+            "headers": [
+                {
+                    "name": "x-api-key",
+                    "content": "{{ .JsonData.apiKey }}"
+                }
+            ]
+        }
+    ]
 }

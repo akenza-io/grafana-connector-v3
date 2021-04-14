@@ -20,6 +20,11 @@ docker-compose up grafana
 ```
 The Grafana server will be started and can be accessed at [localhost:3000](). The Plugin is located at the very bottom of the Plugin list.
 
+## Signing the plugin
+
+export GRAFANA_API_KEY=<grafana-api-key>
+npx @grafana/toolkit plugin:sign --rootUrls https://akenza.io
+
 ## Data Source Plugin Development Resources
 - [Build a data source plugin tutorial](https://grafana.com/tutorials/build-a-data-source-plugin)
 - [Grafana documentation](https://grafana.com/docs/)

@@ -6,26 +6,35 @@ import {
     DateTime,
     FieldType,
     MutableDataFrame,
-    dateTime,
+    dateTime, SelectableValue,
 } from '@grafana/data';
 import { BackendSrvRequest, getBackendSrv } from '@grafana/runtime';
 import buildUrl from 'build-url';
-import { Asset, AssetData, AssetList, Environment, EnvironmentList, TimeSeriesData } from './types/AkenzaTypes';
+import {
+    Device,
+    DeviceData,
+    DeviceList, Organization,
+    OrganizationList,
+    TimeSeriesData
+} from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
 import { HttpErrorPromise, HttpPromise } from './types/Utils';
 
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
-    private readonly baseUrl: string;
-    private readonly apiKey: string;
+    private config: AkenzaDataSourceConfig;
 
     constructor(instanceSettings: DataSourceInstanceSettings<AkenzaDataSourceConfig>) {
         super(instanceSettings);
-        this.baseUrl = instanceSettings.jsonData.baseUrl;
-        this.apiKey = instanceSettings.jsonData.apiKey;
+        this.config = instanceSettings.jsonData;
     }
 
     async testDatasource() {
-        return this.doRequest('/v1/environments', 'GET').then(
+        const params = {
+            size: 1,
+            minimal: true
+        };
+
+        return this.doRequest('/v3/organizations', 'GET', params).then(
             () => {
                 return {
                     status: 'success',
@@ -46,7 +55,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         const to: DateTime = options.range.to;
         const panelData: MutableDataFrame[] = [];
         for (let target of options.targets) {
-            if (target.assetId && target.topic && target.dataKey && !target.hide) {
+            if (target.deviceId && target.topic && target.dataKey && !target.hide) {
                 const timeSeriesData = await this.getTimeSeriesData(target, from.toISOString(), to.toISOString());
                 const data: number[] = [];
                 const time: number[] = [];
@@ -61,7 +70,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                         refId: target.refId,
                         fields: [
                             { name: 'Time', values: time, type: FieldType.time },
-                            { name: target.asset?.name + ' - ' + target.dataKey, values: data, type: FieldType.number },
+                            { name: target.device?.name + ' - ' + target.dataKey, values: data, type: FieldType.number },
                         ],
                     })
                 );
@@ -81,7 +90,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             },
         };
 
-        return this.doRequest('/v2/assets/' + query.assetId + '/query/time-series', 'POST', null, body).then(
+        return this.doRequest('/v3/devices/' + query.deviceId + '/query/time-series', 'POST', null, body).then(
             (timeSeriesData: HttpPromise<TimeSeriesData>) => {
                 return timeSeriesData.data;
             },
@@ -91,18 +100,51 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         );
     }
 
-    async getAssets(): Promise<Asset[]> {
-        const params = {
-            limit: 1000,
-            // has to be a string, since the backendSrv just calls toString() on it which results in [Object object] and an API error...
-            fields: '{"id": true, "name": true}',
-        };
+    async getDevices(searchString?: string): Promise<Device[]> {
+        return this.getOrganization().then(
+            (organization) => {
+                const params = {
+                    organizationId: organization.id,
+                    type: "DEVICE",
+                    search: searchString
+                };
 
-        return this.getEnvironment().then(
-            environment => {
-                return this.doRequest('/v2/environments/' + environment.id + '/devices', 'GET', params).then(
-                    (assetListHttpPromise: HttpPromise<AssetList>) => {
-                        return assetListHttpPromise.data.data;
+                return this.doRequest('/v3/assets', 'GET', params).then(
+                    (assetListHttpPromise: HttpPromise<DeviceList>) => {
+                        return assetListHttpPromise.data.content;
+                    },
+                    (error: HttpErrorPromise) => {
+                        throw this.generateErrorMessage(error);
+                    }
+                );
+            },
+            (error: HttpErrorPromise) => {
+                throw this.generateErrorMessage(error);
+            }
+        );
+    }
+
+    async getDevicesForOptions(search: string): Promise<Array<SelectableValue<string>>> {
+        console.log(search)
+
+        return this.getOrganization().then(
+            (organization) => {
+                const params = {
+                    organizationId: organization.id,
+                    type: "DEVICE"
+                };
+
+                return this.doRequest('/v3/assets', 'GET', params).then(
+                    (assetListHttpPromise: HttpPromise<DeviceList>) => {
+                        const deviceSelectOptions: Array<SelectableValue<string>> = [];
+
+                        for (const asset of assetListHttpPromise.data.content) {
+                            deviceSelectOptions.push({ label: asset.name, value: asset.id, asset: asset });
+                        }
+
+                        console.log(deviceSelectOptions)
+
+                        return deviceSelectOptions;
                     },
                     (error: HttpErrorPromise) => {
                         throw this.generateErrorMessage(error);
@@ -116,7 +158,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
     }
 
     async getTopics(assetId: string): Promise<string[]> {
-        return this.doRequest('/v2/assets/' + assetId + '/query/topics', 'GET').then(
+        return this.doRequest('/v3/devices/' + assetId + '/query/topics', 'GET').then(
             (topics: HttpPromise<string[]>) => {
                 return topics.data;
             },
@@ -133,10 +175,10 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             skip: 0,
         };
 
-        return this.doRequest('/v2/assets/' + assetId + '/query', 'POST', null, queryOptions).then(
-            (res: HttpPromise<AssetData[]>) => {
+        return this.doRequest('/v3/devices/' + assetId + '/query', 'POST', null, queryOptions).then(
+            (res: HttpPromise<DeviceData[]>) => {
                 const keys: string[] = [];
-                Object.keys(res.data[0].data).forEach(key => keys.push(key));
+                Object.keys(res.data[0].data).forEach((key) => keys.push(key));
                 return keys;
             },
             (error: HttpErrorPromise) => {
@@ -145,10 +187,15 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         );
     }
 
-    private async getEnvironment(): Promise<Environment> {
-        return this.doRequest('/v1/environments', 'GET').then(
-            (environmentListHttpPromise: HttpPromise<EnvironmentList>) => {
-                return environmentListHttpPromise.data.data[0];
+    private async getOrganization(): Promise<Organization> {
+        const params = {
+            size: 1,
+            minimal: true
+        };
+
+        return this.doRequest('/v3/organizations', 'GET', params).then(
+            (environmentListHttpPromise: HttpPromise<OrganizationList>) => {
+                return environmentListHttpPromise.data.content[0];
             },
             (error: HttpErrorPromise) => {
                 throw this.generateErrorMessage(error);
@@ -158,12 +205,12 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
 
     private doRequest(path: string, method: string, params?: any, data?: any) {
         const options: BackendSrvRequest = {
-            url: buildUrl(this.baseUrl, { path }),
+            url: buildUrl(this.config.baseUrl, { path }),
             method,
             params,
             data,
             headers: {
-                'Api-Key': this.apiKey,
+                'x-api-key': this.config.apiKey,
             },
         };
 
@@ -172,7 +219,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
 
     private generateErrorMessage(error: HttpErrorPromise) {
         if (error.status === 401) {
-            return '401 Unauthorized - API Key provided is not valid';
+            return '401 Unauthorized - Specified API Key is invalid';
         } else if (error.statusText && error.data?.message) {
             return error.status + ' ' + error.statusText + ': ' + error.data.message;
         } else {

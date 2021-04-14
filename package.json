@@ -12,12 +12,14 @@
     "author": "David Giger",
     "license": "Apache-2.0",
     "dependencies": {
-        "@grafana/data": "^7.0.0",
-        "@grafana/runtime": "^7.0.0",
-        "@grafana/toolkit": "^7.0.0",
-        "@grafana/ui": "^7.0.0",
-        "@types/lodash": "^4.14.152",
-        "build-url": "^2.0.0"
+        "@grafana/data": "7.5.3",
+        "@grafana/runtime": "7.5.3",
+        "@grafana/toolkit": "7.5.3",
+        "@grafana/ui": "7.5.3",
+        "@types/lodash": "^4.14.168",
+        "build-url": "^2.0.0",
+        "rxjs": "^6.6.3",
+        "rxjs-compat": "^6.6.7"
     },
     "engines": {
         "node": ">=12 <16"

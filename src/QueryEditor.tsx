@@ -1,34 +1,40 @@
 import React, { PureComponent } from 'react';
-import { Select } from '@grafana/ui';
-import { HorizontalGroup } from '@grafana/ui';
+import { HorizontalGroup, Select } from '@grafana/ui';
 import { QueryEditorProps, SelectableValue } from '@grafana/data';
 import { DataSource } from './DataSource';
-import { Asset } from './types/AkenzaTypes';
+import { Device } from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
 import { QueryEditorState } from './types/Utils';
+import { Subject } from 'rxjs';
+import 'rxjs/add/operator/debounceTime';
+import 'rxjs/add/operator/distinctUntilChanged';
+import 'rxjs/add/operator/switchMap';
+
 
 type Props = QueryEditorProps<DataSource, AkenzaQuery, AkenzaDataSourceConfig>;
 
 export class QueryEditor extends PureComponent<Props, QueryEditorState> {
-    private loadingAssets = false;
+    private loadingDevices = false;
     private loadingTopics = false;
     private loadingDataKeys = false;
     private initialLoadingComplete = false;
     private dataSourceId: number;
+    private search = new Subject<string>();
 
     constructor(props: Props) {
         super(props);
         this.initializeViewProperties();
+        this.initializeSearchInputSubscription();
         this.dataSourceId = this.props.datasource.id;
     }
 
     private initializeViewProperties() {
         const query = this.props.query;
         // initialize the select values and their options if the panel has been saved before, will initialize empty otherwise
-        const assetSelectValue = {
-            label: query.asset?.name || undefined,
-            value: query.assetId || null,
-            asset: query.asset,
+        const deviceSelectValue = {
+            label: query.device?.name || undefined,
+            value: query.deviceId || null,
+            asset: query.device,
         };
         const topicSelectValue = {
             label: query.topic,
@@ -38,42 +44,92 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             label: query.dataKey,
             value: query.dataKey || null,
         };
+
         this.state = {
-            assetValue: assetSelectValue,
-            assetOptions: [assetSelectValue],
+            deviceValue: deviceSelectValue,
+            deviceOptions: [deviceSelectValue],
             topicValue: topicSelectValue,
             topicOptions: [topicSelectValue],
             dataKeyValue: dataKeySelectValue,
             dataKeyOptions: [dataKeySelectValue],
         };
-        this.loadAssets();
+
+        this.loadDevices();
         // load topics and queries if the panel has been saved
-        if (query.assetId && query.topic) {
-            this.loadTopics(query.assetId);
-            this.loadKeys(query.assetId, query.topic);
+        if (query.deviceId && query.topic) {
+            this.loadTopics(query.deviceId);
+            this.loadKeys(query.deviceId, query.topic);
         }
     }
 
-    private loadAssets(): void {
+    private initializeSearchInputSubscription(): void {
+        this.search
+            // wait for 250ms after the user has finished typing
+            .debounceTime(250)
+            .distinctUntilChanged()
+            // subscribe and update the device options
+            .subscribe(searchString => {
+                // todo figure out why the fuck this if is in place (it doesn't load anything if this statement is included...
+                console.log(!this.loadingDevices, this.dataSourceId !== this.props.datasource.id);
+                if (!this.loadingDevices && this.dataSourceId !== this.props.datasource.id) {
+
+                    this.loadingDevices = true;
+                    if (this.dataSourceId !== this.props.datasource.id && this.initialLoadingComplete) {
+                        this.resetAllValues();
+                        this.dataSourceId = this.props.datasource.id;
+                    }
+                    console.log(searchString)
+
+                    this.props.datasource.getDevices(searchString).then(
+                        (devices: Device[]) => {
+                            const deviceSelectOptions: Array<SelectableValue<string>> = [];
+
+                            for (const asset of devices) {
+                                deviceSelectOptions.push({label: asset.name, value: asset.id, asset: asset});
+                            }
+                            this.setState(prevState => ({
+                                ...prevState,
+                                deviceOptions: deviceSelectOptions,
+                            }));
+
+                            this.loadingDevices = false;
+                            this.initialLoadingComplete = true;
+                            // initial render does not update the select loading state, hence the force update
+                            // it won't trigger a re-rendering of the view, since the above checks prevent this
+                            this.forceUpdate();
+                        },
+                        // in case an error is thrown, stop the loading animation
+                        () => {
+                            this.loadingDevices = false;
+                        }
+                    );
+                }
+            })
+    }
+
+    private loadDevices(searchString?: string): void {
         // render() is called multiple times, in order to avoid spam calling our API this check has been put into place
-        if (!this.loadingAssets && this.dataSourceId !== this.props.datasource.id) {
-            this.loadingAssets = true;
+        if (!this.loadingDevices && this.dataSourceId !== this.props.datasource.id) {
+            this.loadingDevices = true;
             if (this.dataSourceId !== this.props.datasource.id && this.initialLoadingComplete) {
                 this.resetAllValues();
                 this.dataSourceId = this.props.datasource.id;
             }
+            console.log(searchString)
 
-            this.props.datasource.getAssets().then(
-                (assets: Asset[]) => {
-                    const assetSelectOptions: Array<SelectableValue<string>> = [];
-                    for (const asset of assets) {
-                        assetSelectOptions.push({ label: asset.name, value: asset.id, asset: asset });
+            this.props.datasource.getDevices(searchString).then(
+                (devices: Device[]) => {
+                    const deviceSelectOptions: Array<SelectableValue<string>> = [];
+
+                    for (const asset of devices) {
+                        deviceSelectOptions.push({ label: asset.name, value: asset.id, asset: asset });
                     }
                     this.setState(prevState => ({
                         ...prevState,
-                        assetOptions: assetSelectOptions,
+                        deviceOptions: deviceSelectOptions,
                     }));
-                    this.loadingAssets = false;
+
+                    this.loadingDevices = false;
                     this.initialLoadingComplete = true;
                     // initial render does not update the select loading state, hence the force update
                     // it won't trigger a re-rendering of the view, since the above checks prevent this
@@ -81,7 +137,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                 },
                 // in case an error is thrown, stop the loading animation
                 () => {
-                    this.loadingAssets = false;
+                    this.loadingDevices = false;
                 }
             );
         }
@@ -134,32 +190,33 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     }
 
     render() {
-        const { assetOptions, assetValue, dataKeyOptions, dataKeyValue, topicOptions, topicValue } = this.state;
-        this.loadAssets();
+        const { deviceOptions, deviceValue, dataKeyOptions, dataKeyValue, topicOptions, topicValue } = this.state;
+        this.loadDevices();
 
         return (
             <div className="gf-form">
                 <HorizontalGroup spacing={'md'} wrap={true}>
                     <HorizontalGroup spacing={'none'}>
-                        <div className="gf-form-label">Asset:</div>
+                        <div className="gf-form-label" id="someId">Asset:</div>
                         <Select
                             menuPlacement={'bottom'}
                             autoFocus={true}
-                            isLoading={this.loadingAssets}
-                            placeholder={'Select an asset'}
-                            noOptionsMessage={'No assets available'}
-                            options={assetOptions}
-                            value={assetValue}
+                            isLoading={this.loadingDevices}
+                            placeholder={'Select a device'}
+                            noOptionsMessage={'No devices available'}
+                            options={deviceOptions}
+                            value={deviceValue}
                             backspaceRemovesValue={true}
-                            onChange={this.onAssetSelectionChange}
+                            onChange={this.onDeviceSelectionChange}
                             width={48}
+                            onInputChange={this.onDeviceInputChange}
                         />
                     </HorizontalGroup>
                     <HorizontalGroup spacing={'none'}>
                         <div className="gf-form-label">Topic:</div>
                         <Select
                             menuPlacement={'bottom'}
-                            disabled={!this.props.query.assetId}
+                            disabled={!this.props.query.deviceId}
                             isLoading={this.loadingTopics}
                             placeholder={'Select a topic'}
                             noOptionsMessage={'No topics available'}
@@ -190,16 +247,24 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         );
     }
 
-    onAssetSelectionChange = (event: SelectableValue<string>): void => {
+    onDeviceInputChange = (searchString: string) : void => {
+        // emit the search string in the search subject
+        this.search.next(searchString);
+    }
+
+    onDeviceSelectionChange = (event: SelectableValue<string>): void => {
         const { onChange, query, onRunQuery } = this.props;
+        console.log(event);
+
         onChange({
             ...query,
-            assetId: event.value,
-            asset: event.asset,
+            deviceId: event.value,
+            device: event.device,
         });
+
         this.setState(prevState => ({
             ...prevState,
-            assetValue: event,
+            deviceValue: event,
         }));
 
         if (event.value) {
@@ -219,8 +284,8 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             ...prevState,
             topicValue: event,
         }));
-        if (event.value && query.assetId) {
-            this.loadKeys(query.assetId, event.value);
+        if (event.value && query.deviceId) {
+            this.loadKeys(query.deviceId, event.value);
         }
         // execute the query
         onRunQuery();
@@ -244,14 +309,15 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         const { onChange, query } = this.props;
         onChange({
             ...query,
-            assetId: '',
-            asset: undefined,
+            deviceId: '',
+            device: undefined,
             topic: '',
             dataKey: '',
         });
+
         this.setState({
-            assetValue: {},
-            assetOptions: [],
+            deviceValue: {},
+            deviceOptions: [],
             topicValue: {},
             topicOptions: [],
             dataKeyValue: {},
