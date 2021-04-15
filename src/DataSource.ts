@@ -8,11 +8,11 @@ import {
     MutableDataFrame,
     dateTime,
 } from '@grafana/data';
-import { BackendSrvRequest, getBackendSrv } from '@grafana/runtime';
+import { BackendSrvRequest, FetchError, FetchResponse, getBackendSrv } from '@grafana/runtime';
 import buildUrl from 'build-url';
 import { Device, DeviceData, DeviceList, Organization, OrganizationList, TimeSeriesData } from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
-import { HttpErrorPromise, HttpPromise } from './types/Utils';
+import { Observable } from 'rxjs';
 
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
     private config: AkenzaDataSourceConfig;
@@ -28,20 +28,22 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             minimal: true,
         };
 
-        return this.doRequest('/v3/organizations', 'GET', params).then(
-            () => {
-                return {
-                    status: 'success',
-                    message: 'Success',
-                };
-            },
-            (error: HttpErrorPromise) => {
-                return {
-                    status: 'error',
-                    message: this.generateErrorMessage(error),
-                };
-            }
-        );
+        return new Promise((resolve, reject) => {
+            this.executeRequest<Organization>('/v3/organizations', 'GET', params).subscribe(
+                () => {
+                    resolve({
+                        status: 'success',
+                        message: 'Success',
+                    });
+                },
+                (error: FetchError) => {
+                    reject({
+                        status: 'error',
+                        message: this.generateErrorMessage(error),
+                    });
+                }
+            );
+        });
     }
 
     async query(options: DataQueryRequest<AkenzaQuery>): Promise<DataQueryResponse> {
@@ -88,87 +90,97 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             },
         };
 
-        return this.doRequest('/v3/devices/' + query.deviceId + '/query/time-series', 'POST', null, body).then(
-            (timeSeriesData: HttpPromise<TimeSeriesData>) => {
-                return timeSeriesData.data;
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+        return new Promise((resolve, reject) => {
+            this.executeRequest<TimeSeriesData>(
+                '/v3/devices/' + query.deviceId + '/query/time-series',
+                'POST',
+                null,
+                body
+            ).subscribe(
+                (response: FetchResponse<TimeSeriesData>) => {
+                    resolve(response.data);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
     async getDevices(searchString?: string): Promise<Device[]> {
-        return this.getOrganization().then(
-            (organization) => {
+        return this.getOrganization().then((organization) => {
+            return new Promise((resolve, reject) => {
                 const params = {
                     organizationId: organization.id,
                     type: 'DEVICE',
                     search: searchString,
                 };
 
-                return this.doRequest('/v3/assets', 'GET', params).then(
-                    (assetListHttpPromise: HttpPromise<DeviceList>) => {
-                        return assetListHttpPromise.data.content;
+                this.executeRequest<DeviceList>('/v3/assets', 'GET', params).subscribe(
+                    (response: FetchResponse<DeviceList>) => {
+                        resolve(response.data.content);
                     },
-                    (error: HttpErrorPromise) => {
-                        throw this.generateErrorMessage(error);
+                    (error: FetchError) => {
+                        reject(this.generateErrorMessage(error));
                     }
                 );
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+            });
+        });
     }
 
     async getTopics(assetId: string): Promise<string[]> {
-        return this.doRequest('/v3/devices/' + assetId + '/query/topics', 'GET').then(
-            (topics: HttpPromise<string[]>) => {
-                return topics.data;
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+        return new Promise((resolve, reject) => {
+            this.executeRequest<string[]>('/v3/devices/' + assetId + '/query/topics', 'GET').subscribe(
+                (response: FetchResponse<string[]>) => {
+                    resolve(response.data);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
     async getKeys(assetId: string, topic: string): Promise<string[]> {
-        const queryOptions = {
+        const params = {
             topic: topic,
             limit: 1,
             skip: 0,
         };
+        const keys: string[] = [];
 
-        return this.doRequest('/v3/devices/' + assetId + '/query', 'POST', null, queryOptions).then(
-            (res: HttpPromise<DeviceData[]>) => {
-                const keys: string[] = [];
-                Object.keys(res.data[0].data).forEach((key) => keys.push(key));
-                return keys;
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+        return new Promise((resolve, reject) => {
+            this.executeRequest<DeviceData[]>('/v3/devices/' + assetId + '/query', 'POST', null, params).subscribe(
+                (response: FetchResponse<DeviceData[]>) => {
+                    Object.keys(response.data[0].data).forEach((key) => keys.push(key));
+                    resolve(keys);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
-    private async getOrganization(): Promise<Organization> {
+    private getOrganization(): Promise<Organization> {
         const params = {
             size: 1,
             minimal: true,
         };
 
-        return this.doRequest('/v3/organizations', 'GET', params).then(
-            (environmentListHttpPromise: HttpPromise<OrganizationList>) => {
-                return environmentListHttpPromise.data.content[0];
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+        return new Promise((resolve, reject) => {
+            this.executeRequest<DeviceList>('/v3/organizations', 'GET', params).subscribe(
+                (response: FetchResponse<OrganizationList>) => {
+                    resolve(response.data.content[0]);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
-    private doRequest(path: string, method: string, params?: any, data?: any) {
+    private executeRequest<T>(path: string, method: string, params?: any, data?: any): Observable<FetchResponse<T>> {
         const options: BackendSrvRequest = {
             url: buildUrl(this.config.baseUrl, { path }),
             method,
@@ -179,10 +191,10 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             },
         };
 
-        return getBackendSrv().datasourceRequest(options);
+        return getBackendSrv().fetch(options);
     }
 
-    private generateErrorMessage(error: HttpErrorPromise) {
+    private generateErrorMessage(error: FetchError): string {
         if (error.status === 401) {
             return '401 Unauthorized - Specified API Key is invalid';
         } else if (error.statusText && error.data?.message) {

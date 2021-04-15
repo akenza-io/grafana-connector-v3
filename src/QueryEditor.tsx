@@ -9,7 +9,9 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 type Props = QueryEditorProps<DataSource, AkenzaQuery, AkenzaDataSourceConfig>;
-interface Callback { (): void; }
+interface Callback {
+    (): void;
+}
 
 export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     private initialLoadingComplete = false;
@@ -83,11 +85,14 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                     this.initialLoadingComplete = true;
                 }
             });
-
         }
     }
 
-    private queryDevicesAndAssembleSelectionOptions(searchString?: string, skipStateUpdate?: boolean, callback?: Callback) {
+    private queryDevicesAndAssembleSelectionOptions(
+        searchString?: string,
+        skipStateUpdate?: boolean,
+        callback?: Callback
+    ) {
         // the loading state should not be shown under certain circumstances
         if (!skipStateUpdate) {
             this.setLoadingDevicesState(true);
@@ -127,7 +132,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                 }
                 // reset the values only after initial loading was completed, will reset it again otherwise due to react lifecycles
                 if (this.initialLoadingComplete) {
-                    this.resetTopicAndDataKeyValues(topicsSelectOptions)
+                    this.resetTopicAndDataKeyValues(topicsSelectOptions);
                 }
                 if (callback) {
                     callback();
@@ -198,8 +203,6 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                             onChange={this.onDeviceSelectionChange}
                             width={48}
                             onInputChange={this.onDeviceInputChange}
-                            backspaceRemovesValue={true}
-                            isClearable={true}
                         />
                     </HorizontalGroup>
                     <HorizontalGroup spacing={'none'}>
@@ -249,7 +252,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     onDeviceSelectionChange = (deviceSelection: SelectableValue<string>): void => {
         const { onChange, query, onRunQuery } = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
-        if (deviceSelection.value !== query.deviceId) {
+        if (deviceSelection?.value !== query.deviceId) {
             // modify the query
             onChange({
                 ...query,
@@ -273,7 +276,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     onTopicSelectionChange = (topicSelection: SelectableValue<string>): void => {
         const { onChange, query, onRunQuery } = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
-        if (topicSelection.value !== query.topic) {
+        if (topicSelection?.value !== query.topic) {
             // modify the query
             onChange({
                 ...query,
@@ -296,7 +299,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     onDataKeySelectionChange = (dataKeySelection: SelectableValue<string>): void => {
         const { onChange, query, onRunQuery } = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
-        if (dataKeySelection.value !== query.dataKey) {
+        if (dataKeySelection?.value !== query.dataKey) {
             // modify the query
             onChange({
                 ...query,
