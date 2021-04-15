@@ -10,7 +10,6 @@ import 'rxjs/add/operator/debounceTime';
 import 'rxjs/add/operator/distinctUntilChanged';
 import 'rxjs/add/operator/switchMap';
 
-
 type Props = QueryEditorProps<DataSource, AkenzaQuery, AkenzaDataSourceConfig>;
 
 export class QueryEditor extends PureComponent<Props, QueryEditorState> {
@@ -23,12 +22,6 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
 
     constructor(props: Props) {
         super(props);
-        this.initializeViewProperties();
-        this.initializeSearchInputSubscription();
-        this.dataSourceId = this.props.datasource.id;
-    }
-
-    private initializeViewProperties() {
         const query = this.props.query;
         // initialize the select values and their options if the panel has been saved before, will initialize empty otherwise
         const deviceSelectValue = {
@@ -60,6 +53,9 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             this.loadTopics(query.deviceId);
             this.loadKeys(query.deviceId, query.topic);
         }
+
+        this.initializeSearchInputSubscription();
+        this.dataSourceId = this.props.datasource.id;
     }
 
     private initializeSearchInputSubscription(): void {
@@ -68,26 +64,25 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             .debounceTime(250)
             .distinctUntilChanged()
             // subscribe and update the device options
-            .subscribe(searchString => {
+            .subscribe((searchString) => {
                 // todo figure out why the fuck this if is in place (it doesn't load anything if this statement is included...
                 console.log(!this.loadingDevices, this.dataSourceId !== this.props.datasource.id);
                 if (!this.loadingDevices && this.dataSourceId !== this.props.datasource.id) {
-
                     this.loadingDevices = true;
                     if (this.dataSourceId !== this.props.datasource.id && this.initialLoadingComplete) {
                         this.resetAllValues();
                         this.dataSourceId = this.props.datasource.id;
                     }
-                    console.log(searchString)
+                    console.log(searchString);
 
                     this.props.datasource.getDevices(searchString).then(
                         (devices: Device[]) => {
                             const deviceSelectOptions: Array<SelectableValue<string>> = [];
 
                             for (const asset of devices) {
-                                deviceSelectOptions.push({label: asset.name, value: asset.id, asset: asset});
+                                deviceSelectOptions.push({ label: asset.name, value: asset.id, asset: asset });
                             }
-                            this.setState(prevState => ({
+                            this.setState((prevState) => ({
                                 ...prevState,
                                 deviceOptions: deviceSelectOptions,
                             }));
@@ -104,7 +99,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                         }
                     );
                 }
-            })
+            });
     }
 
     private loadDevices(searchString?: string): void {
@@ -115,7 +110,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                 this.resetAllValues();
                 this.dataSourceId = this.props.datasource.id;
             }
-            console.log(searchString)
+            console.log(searchString);
 
             this.props.datasource.getDevices(searchString).then(
                 (devices: Device[]) => {
@@ -124,7 +119,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                     for (const asset of devices) {
                         deviceSelectOptions.push({ label: asset.name, value: asset.id, asset: asset });
                     }
-                    this.setState(prevState => ({
+                    this.setState((prevState) => ({
                         ...prevState,
                         deviceOptions: deviceSelectOptions,
                     }));
@@ -152,7 +147,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                     topicsSelectOptions.push({ label: topic, value: topic });
                 }
                 this.loadingTopics = false;
-                this.setState(prevState => ({
+                this.setState((prevState) => ({
                     ...prevState,
                     topicOptions: topicsSelectOptions,
                 }));
@@ -177,7 +172,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                     keySelectOptions.push({ label: key, value: key });
                 }
                 this.loadingDataKeys = false;
-                this.setState(prevState => ({
+                this.setState((prevState) => ({
                     ...prevState,
                     dataKeyOptions: keySelectOptions,
                 }));
@@ -197,7 +192,9 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             <div className="gf-form">
                 <HorizontalGroup spacing={'md'} wrap={true}>
                     <HorizontalGroup spacing={'none'}>
-                        <div className="gf-form-label" id="someId">Asset:</div>
+                        <div className="gf-form-label" id="someId">
+                            Asset:
+                        </div>
                         <Select
                             menuPlacement={'bottom'}
                             autoFocus={true}
@@ -247,10 +244,10 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         );
     }
 
-    onDeviceInputChange = (searchString: string) : void => {
+    onDeviceInputChange = (searchString: string): void => {
         // emit the search string in the search subject
         this.search.next(searchString);
-    }
+    };
 
     onDeviceSelectionChange = (event: SelectableValue<string>): void => {
         const { onChange, query, onRunQuery } = this.props;
@@ -262,7 +259,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             device: event.device,
         });
 
-        this.setState(prevState => ({
+        this.setState((prevState) => ({
             ...prevState,
             deviceValue: event,
         }));
@@ -280,7 +277,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             ...query,
             topic: event.value,
         });
-        this.setState(prevState => ({
+        this.setState((prevState) => ({
             ...prevState,
             topicValue: event,
         }));
@@ -297,7 +294,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             ...query,
             dataKey: event.value,
         });
-        this.setState(prevState => ({
+        this.setState((prevState) => ({
             ...prevState,
             dataKeyValue: event,
         }));
@@ -332,7 +329,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             topic: '',
             dataKey: '',
         });
-        this.setState(prevState => ({
+        this.setState((prevState) => ({
             ...prevState,
             topicValue: {},
             dataKeyValue: {},

@@ -1,31 +1,27 @@
 {
     "type": "datasource",
-    "name": "Akenza Core Connector",
-    "id": "akenza-core-datasource",
+    "name": "Akenza Connector",
+    "id": "akenza-datasource",
     "metrics": true,
     "info": {
         "description": "Enables Akenza as Data Source",
         "author": {
             "name": "David Giger",
-            "url": "https://akenza.com"
+            "url": "https://akenza.io"
         },
-        "keywords": [
-            "akenza.io",
-            "akenza",
-            "IoT"
-        ],
+        "keywords": ["akenza.io", "akenza", "IoT"],
         "logos": {
-            "small": "img/akenza_small.svg",
-            "large": "img/akenza_large.svg"
+            "small": "img/akenza-badge-light.png",
+            "large": "img/akenza-io-logo.svg"
         },
         "links": [
             {
                 "name": "Website",
-                "url": "https://github.com/akenza-io/grafana-connector"
+                "url": "https://github.com/akenza-io/grafana-connector-v3"
             },
             {
                 "name": "License",
-                "url": "https://github.com/akenza-io/grafana-connector/blob/master/LICENSE"
+                "url": "https://github.com/akenza-io/grafana-connector-v3/blob/master/LICENSE"
             }
         ],
         "screenshots": [],
