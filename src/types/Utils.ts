@@ -31,4 +31,7 @@ export interface QueryEditorState {
     topicOptions: SelectableValue[];
     dataKeyValue?: SelectableValue;
     dataKeyOptions: SelectableValue[];
+    loadingDevices: boolean;
+    loadingTopics: boolean;
+    loadingDataKeys: boolean;
 }

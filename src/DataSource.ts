@@ -7,7 +7,6 @@ import {
     FieldType,
     MutableDataFrame,
     dateTime,
-    SelectableValue,
 } from '@grafana/data';
 import { BackendSrvRequest, getBackendSrv } from '@grafana/runtime';
 import buildUrl from 'build-url';
@@ -123,39 +122,6 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         );
     }
 
-    async getDevicesForOptions(search: string): Promise<Array<SelectableValue<string>>> {
-        console.log(search);
-
-        return this.getOrganization().then(
-            (organization) => {
-                const params = {
-                    organizationId: organization.id,
-                    type: 'DEVICE',
-                };
-
-                return this.doRequest('/v3/assets', 'GET', params).then(
-                    (assetListHttpPromise: HttpPromise<DeviceList>) => {
-                        const deviceSelectOptions: Array<SelectableValue<string>> = [];
-
-                        for (const asset of assetListHttpPromise.data.content) {
-                            deviceSelectOptions.push({ label: asset.name, value: asset.id, asset: asset });
-                        }
-
-                        console.log(deviceSelectOptions);
-
-                        return deviceSelectOptions;
-                    },
-                    (error: HttpErrorPromise) => {
-                        throw this.generateErrorMessage(error);
-                    }
-                );
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
-    }
-
     async getTopics(assetId: string): Promise<string[]> {
         return this.doRequest('/v3/devices/' + assetId + '/query/topics', 'GET').then(
             (topics: HttpPromise<string[]>) => {
@@ -222,7 +188,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         } else if (error.statusText && error.data?.message) {
             return error.status + ' ' + error.statusText + ': ' + error.data.message;
         } else {
-            return 'An unknown error occurred, please contact Akenza Support: support@akenza.io';
+            return 'An unknown error occurred, please contact our support: support@akenza.io';
         }
     }
 }
