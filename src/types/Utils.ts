@@ -25,7 +25,7 @@ export interface AkenzaErrorMessage {
 }
 
 export interface QueryEditorState {
-    deviceValue?: SelectableValue;
+    deviceValue: SelectableValue;
     deviceOptions: SelectableValue[];
     topicValue?: SelectableValue;
     topicOptions: SelectableValue[];
