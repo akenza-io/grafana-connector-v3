@@ -25,7 +25,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         let deviceSelectValue = undefined;
         let deviceSelectOptions = [];
         if (query.device) {
-            deviceSelectValue =  {
+            deviceSelectValue = {
                 label: query.device.name,
                 value: query.deviceId,
                 asset: query.device,
@@ -36,7 +36,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         let topicSelectValue = undefined;
         let topicSelectOptions = [];
         if (query.topic) {
-            topicSelectValue =  {
+            topicSelectValue = {
                 label: query.topic,
                 value: query.topic,
             };
