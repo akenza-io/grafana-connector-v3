@@ -23,20 +23,20 @@ jobs:
       - name: Get tag version
         id: get_tag_version
         run: echo ::set-output name=TAG_VERSION::$(echo ${GITHUB_REF##*/} | sed 's/[a-z-]//g')
-      
+
       - name: Set package version
         run: yarn version --new-version ${{ steps.get_tag_version.outputs.TAG_VERSION }} --no-git-tag-version
 
       - name: Set readme version
-        run: sed -i "s/{VERSION}/${{ steps.get_tag_version.outputs.TAG_VERSION }}/g" README.md && cat README.md 
+        run: sed -i "s/{VERSION}/${{ steps.get_tag_version.outputs.TAG_VERSION }}/g" README.md && cat README.md
 
       - name: Build plugin
         run: yarn build
 
-      # - name: Sign plugin
-      #   run: npx @grafana/toolkit@canary plugin:sign
-      #   env:
-      #     GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }} # Requires a Grafana API key from Grafana.com.
+      - name: Sign plugin
+        run: npx @grafana/toolkit plugin:sign --rootUrls ${{ secrets.PLUGIN_ROOT_URLS }}
+        env:
+          GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
 
       - name: Get plugin information
         run: |
