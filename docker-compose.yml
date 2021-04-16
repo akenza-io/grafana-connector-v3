@@ -2,10 +2,11 @@ version: "3.5"
 
 services:
   grafana:
-    image: grafana/grafana:7.0.0
+    image: grafana/grafana:7.5.4
     container_name: 'grafana-connector-grafana'
     volumes:
       - ./dist:/var/lib/grafana/plugins
+      - ./tmp/grafana/data:/var/lib/grafana
     env_file:
       - config/grafana/grafana.config
     ports:

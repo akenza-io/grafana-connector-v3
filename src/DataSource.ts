@@ -8,37 +8,42 @@ import {
     MutableDataFrame,
     dateTime,
 } from '@grafana/data';
-import { BackendSrvRequest, getBackendSrv } from '@grafana/runtime';
+import { BackendSrvRequest, FetchError, FetchResponse, getBackendSrv } from '@grafana/runtime';
 import buildUrl from 'build-url';
-import { Asset, AssetData, AssetList, Environment, EnvironmentList, TimeSeriesData } from './types/AkenzaTypes';
+import { Device, DeviceData, DeviceList, Organization, OrganizationList, TimeSeriesData } from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
-import { HttpErrorPromise, HttpPromise } from './types/Utils';
+import { Observable } from 'rxjs';
 
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
-    private readonly baseUrl: string;
-    private readonly apiKey: string;
+    private config: AkenzaDataSourceConfig;
 
     constructor(instanceSettings: DataSourceInstanceSettings<AkenzaDataSourceConfig>) {
         super(instanceSettings);
-        this.baseUrl = instanceSettings.jsonData.baseUrl;
-        this.apiKey = instanceSettings.jsonData.apiKey;
+        this.config = instanceSettings.jsonData;
     }
 
     async testDatasource() {
-        return this.doRequest('/v1/environments', 'GET').then(
-            () => {
-                return {
-                    status: 'success',
-                    message: 'Success',
-                };
-            },
-            (error: HttpErrorPromise) => {
-                return {
-                    status: 'error',
-                    message: this.generateErrorMessage(error),
-                };
-            }
-        );
+        const params = {
+            size: 1,
+            minimal: true,
+        };
+
+        return new Promise((resolve, reject) => {
+            this.executeRequest<Organization>('/v3/organizations', 'GET', params).subscribe(
+                () => {
+                    resolve({
+                        status: 'success',
+                        message: 'Success',
+                    });
+                },
+                (error: FetchError) => {
+                    reject({
+                        status: 'error',
+                        message: this.generateErrorMessage(error),
+                    });
+                }
+            );
+        });
     }
 
     async query(options: DataQueryRequest<AkenzaQuery>): Promise<DataQueryResponse> {
@@ -46,7 +51,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         const to: DateTime = options.range.to;
         const panelData: MutableDataFrame[] = [];
         for (let target of options.targets) {
-            if (target.assetId && target.topic && target.dataKey && !target.hide) {
+            if (target.deviceId && target.topic && target.dataKey && !target.hide) {
                 const timeSeriesData = await this.getTimeSeriesData(target, from.toISOString(), to.toISOString());
                 const data: number[] = [];
                 const time: number[] = [];
@@ -61,7 +66,11 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                         refId: target.refId,
                         fields: [
                             { name: 'Time', values: time, type: FieldType.time },
-                            { name: target.asset?.name + ' - ' + target.dataKey, values: data, type: FieldType.number },
+                            {
+                                name: target.device?.name + ' - ' + target.dataKey,
+                                values: data,
+                                type: FieldType.number,
+                            },
                         ],
                     })
                 );
@@ -81,102 +90,117 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             },
         };
 
-        return this.doRequest('/v2/assets/' + query.assetId + '/query/time-series', 'POST', null, body).then(
-            (timeSeriesData: HttpPromise<TimeSeriesData>) => {
-                return timeSeriesData.data;
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+        return new Promise((resolve, reject) => {
+            this.executeRequest<TimeSeriesData>(
+                '/v3/devices/' + query.deviceId + '/query/time-series',
+                'POST',
+                null,
+                body
+            ).subscribe(
+                (response: FetchResponse<TimeSeriesData>) => {
+                    resolve(response.data);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
-    async getAssets(): Promise<Asset[]> {
-        const params = {
-            limit: 1000,
-            // has to be a string, since the backendSrv just calls toString() on it which results in [Object object] and an API error...
-            fields: '{"id": true, "name": true}',
-        };
+    async getDevices(searchString?: string): Promise<Device[]> {
+        return this.getOrganization().then((organization) => {
+            return new Promise((resolve, reject) => {
+                const params = {
+                    organizationId: organization.id,
+                    type: 'DEVICE',
+                    search: searchString,
+                };
 
-        return this.getEnvironment().then(
-            environment => {
-                return this.doRequest('/v2/environments/' + environment.id + '/devices', 'GET', params).then(
-                    (assetListHttpPromise: HttpPromise<AssetList>) => {
-                        return assetListHttpPromise.data.data;
+                this.executeRequest<DeviceList>('/v3/assets', 'GET', params).subscribe(
+                    (response: FetchResponse<DeviceList>) => {
+                        resolve(response.data.content);
                     },
-                    (error: HttpErrorPromise) => {
-                        throw this.generateErrorMessage(error);
+                    (error: FetchError) => {
+                        reject(this.generateErrorMessage(error));
                     }
                 );
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+            });
+        });
     }
 
-    async getTopics(assetId: string): Promise<string[]> {
-        return this.doRequest('/v2/assets/' + assetId + '/query/topics', 'GET').then(
-            (topics: HttpPromise<string[]>) => {
-                return topics.data;
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+    async getTopics(deviceId: string): Promise<string[]> {
+        return new Promise((resolve, reject) => {
+            this.executeRequest<string[]>('/v3/devices/' + deviceId + '/query/topics', 'GET').subscribe(
+                (response: FetchResponse<string[]>) => {
+                    resolve(response.data);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
-    async getKeys(assetId: string, topic: string): Promise<string[]> {
-        const queryOptions = {
+    async getKeys(deviceId: string, topic: string): Promise<string[]> {
+        const params = {
             topic: topic,
             limit: 1,
             skip: 0,
         };
 
-        return this.doRequest('/v2/assets/' + assetId + '/query', 'POST', null, queryOptions).then(
-            (res: HttpPromise<AssetData[]>) => {
-                const keys: string[] = [];
-                Object.keys(res.data[0].data).forEach(key => keys.push(key));
-                return keys;
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+        return new Promise((resolve, reject) => {
+            this.executeRequest<DeviceData[]>('/v3/devices/' + deviceId + '/query', 'POST', null, params).subscribe(
+                (response: FetchResponse<DeviceData[]>) => {
+                    const keys: string[] = [];
+                    Object.keys(response.data[0].data).forEach((key) => keys.push(key));
+                    resolve(keys);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
-    private async getEnvironment(): Promise<Environment> {
-        return this.doRequest('/v1/environments', 'GET').then(
-            (environmentListHttpPromise: HttpPromise<EnvironmentList>) => {
-                return environmentListHttpPromise.data.data[0];
-            },
-            (error: HttpErrorPromise) => {
-                throw this.generateErrorMessage(error);
-            }
-        );
+    private getOrganization(): Promise<Organization> {
+        const params = {
+            size: 1,
+            minimal: true,
+        };
+
+        return new Promise((resolve, reject) => {
+            this.executeRequest<DeviceList>('/v3/organizations', 'GET', params).subscribe(
+                (response: FetchResponse<OrganizationList>) => {
+                    resolve(response.data.content[0]);
+                },
+                (error: FetchError) => {
+                    reject(this.generateErrorMessage(error));
+                }
+            );
+        });
     }
 
-    private doRequest(path: string, method: string, params?: any, data?: any) {
+    private executeRequest<T>(path: string, method: string, params?: any, data?: any): Observable<FetchResponse<T>> {
         const options: BackendSrvRequest = {
-            url: buildUrl(this.baseUrl, { path }),
+            url: buildUrl(this.config.baseUrl, { path }),
             method,
             params,
             data,
             headers: {
-                'Api-Key': this.apiKey,
+                'x-api-key': this.config.apiKey,
             },
         };
 
-        return getBackendSrv().datasourceRequest(options);
+        return getBackendSrv().fetch(options);
     }
 
-    private generateErrorMessage(error: HttpErrorPromise) {
+    private generateErrorMessage(error: FetchError): string {
         if (error.status === 401) {
-            return '401 Unauthorized - API Key provided is not valid';
+            return '401 Unauthorized - Specified API Key is invalid';
         } else if (error.statusText && error.data?.message) {
             return error.status + ' ' + error.statusText + ': ' + error.data.message;
         } else {
-            return 'An unknown error occurred, please contact Akenza Support: support@akenza.com';
+            return 'An unknown error occurred, please contact our support: support@akenza.io';
         }
     }
 }
