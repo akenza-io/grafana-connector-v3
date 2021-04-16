@@ -24,8 +24,13 @@ The Grafana server will be started and can be accessed at [localhost:3000](). Th
 
 ## Signing the plugin
 
-export GRAFANA_API_KEY=<grafana-api-key>
-npx @grafana/toolkit plugin:sign --rootUrls https://akenza.io
+[how to sign a plugin](https://grafana.com/docs/grafana/latest/developers/plugins/sign-a-plugin/)
+
+TL;DR:
+
+```export GRAFANA_API_KEY=<grafana-api-key>``` create an API Key with PluginPublisher role of the Grafana account 
+
+```npx @grafana/toolkit plugin:sign --rootUrls https://akenza.io``` use to sign the plugin
 
 ## Data Source Plugin Development Resources
 - [Build a data source plugin tutorial](https://grafana.com/tutorials/build-a-data-source-plugin)
