@@ -25,7 +25,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         const deviceSelectValue = {
             label: query.device?.name || undefined,
             value: query.deviceId || null,
-            asset: query.device,
+            device: query.device,
         };
         const topicSelectValue = {
             label: query.topic,

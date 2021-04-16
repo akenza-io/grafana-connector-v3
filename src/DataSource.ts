@@ -128,9 +128,9 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         });
     }
 
-    async getTopics(assetId: string): Promise<string[]> {
+    async getTopics(deviceId: string): Promise<string[]> {
         return new Promise((resolve, reject) => {
-            this.executeRequest<string[]>('/v3/devices/' + assetId + '/query/topics', 'GET').subscribe(
+            this.executeRequest<string[]>('/v3/devices/' + deviceId + '/query/topics', 'GET').subscribe(
                 (response: FetchResponse<string[]>) => {
                     resolve(response.data);
                 },
@@ -141,17 +141,17 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         });
     }
 
-    async getKeys(assetId: string, topic: string): Promise<string[]> {
+    async getKeys(deviceId: string, topic: string): Promise<string[]> {
         const params = {
             topic: topic,
             limit: 1,
             skip: 0,
         };
-        const keys: string[] = [];
 
         return new Promise((resolve, reject) => {
-            this.executeRequest<DeviceData[]>('/v3/devices/' + assetId + '/query', 'POST', null, params).subscribe(
+            this.executeRequest<DeviceData[]>('/v3/devices/' + deviceId + '/query', 'POST', null, params).subscribe(
                 (response: FetchResponse<DeviceData[]>) => {
+                    const keys: string[] = [];
                     Object.keys(response.data[0].data).forEach((key) => keys.push(key));
                     resolve(keys);
                 },
