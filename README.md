@@ -44,6 +44,6 @@ TL;DR:
 docker run -d \
 -p 3000:3000 \
 --name=grafana \
--e 'GF_INSTALL_PLUGINS=https://github.com/akenza-io/grafana-connector-v3/releases/download/v{VERSION}/akenza-core-datasource-{VERSION}.zip;akenza-datasource' \
+-e 'GF_INSTALL_PLUGINS=https://github.com/akenza-io/grafana-connector-v3/releases/download/v{VERSION}/akenza-datasource-{VERSION}.zip;akenza-datasource' \
 grafana/grafana:7.5.4
 ```
