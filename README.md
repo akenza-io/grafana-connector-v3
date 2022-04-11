@@ -30,7 +30,7 @@ TL;DR:
 
 ```export GRAFANA_API_KEY=<grafana-api-key>``` create an API Key with PluginPublisher role of the Grafana account 
 
-```npx @grafana/toolkit plugin:sign --rootUrls https://akenza.io``` use to sign the plugin
+```npx @grafana/toolkit plugin:sign --rootUrls https://grafana.akenza.io,https://grafana.anotherdomain.com``` use to sign the plugin
 
 ## Data Source Plugin Development Resources
 - [Build a data source plugin tutorial](https://grafana.com/tutorials/build-a-data-source-plugin)
