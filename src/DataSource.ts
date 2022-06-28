@@ -18,7 +18,7 @@ const routePathSecure = '/akenza-secure';
 const routePathInsecure = '/akenza-insecure';
 
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
-    readonly url?: string;
+    readonly url: string;
 
     constructor(instanceSettings: DataSourceInstanceSettings<AkenzaDataSourceConfig>) {
         super(instanceSettings);
@@ -192,7 +192,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
 
     private executeRequest<T>(path: string, method: string, params?: any, data?: any): Observable<FetchResponse<T>> {
         const options: BackendSrvRequest = {
-            url: buildUrl(this.url!, { path }),
+            url: buildUrl(this.url, { path }),
             method,
             params,
             data,
