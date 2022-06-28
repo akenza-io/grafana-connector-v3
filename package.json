@@ -12,13 +12,13 @@
     "author": "David Giger",
     "license": "Apache-2.0",
     "dependencies": {
-        "@grafana/data": "7.5.3",
-        "@grafana/runtime": "7.5.3",
-        "@grafana/toolkit": "7.5.3",
-        "@grafana/ui": "7.5.3",
-        "@types/lodash": "^4.14.168",
-        "build-url": "^2.0.0",
-        "rxjs": "^6.6.3",
+        "@grafana/data": "^9.0.1",
+        "@grafana/runtime": "^9.0.1",
+        "@grafana/toolkit": "^9.0.1",
+        "@grafana/ui": "^9.0.1",
+        "@types/lodash": "^4.14.182",
+        "build-url": "^6.0.1",
+        "rxjs": "^7.5.5",
         "rxjs-compat": "^6.6.7"
     },
     "engines": {

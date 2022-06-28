@@ -1,4 +1,4 @@
-import { DataQuery, DataSourceJsonData } from '@grafana/data';
+import {DataQuery, DataSourceJsonData} from '@grafana/data';
 import { Device } from './AkenzaTypes';
 
 export interface AkenzaQuery extends DataQuery {
@@ -10,6 +10,11 @@ export interface AkenzaQuery extends DataQuery {
 
 export interface AkenzaDataSourceConfig extends DataSourceJsonData {
     baseUrl: string;
+    // the api key property still needs to be left in here as currently configured data sources still use the unencrypted properties...
     apiKey: string;
     organizationId: string;
+}
+
+export interface AkenzaSecureDataSourceConfig {
+    apiKey?: string;
 }

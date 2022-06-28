@@ -14,12 +14,22 @@ import { Device, DeviceData, DeviceList, Organization, OrganizationList, TimeSer
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
 import { Observable } from 'rxjs';
 
+const routePathSecure = '/akenza-secure';
+const routePathInsecure = '/akenza-insecure';
+
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
-    private config: AkenzaDataSourceConfig;
+    readonly url?: string;
 
     constructor(instanceSettings: DataSourceInstanceSettings<AkenzaDataSourceConfig>) {
         super(instanceSettings);
-        this.config = instanceSettings.jsonData;
+        // backwards compatibility thing...
+        // check which proxy to use based on whether the unencrypted jsonData contains the api key
+        if (instanceSettings.jsonData.apiKey) {
+            this.url = buildUrl(instanceSettings.url!, {path: routePathInsecure});
+            console.warn("api key is stored unencrypted! update the data source to store the api key encrypted.")
+        } else {
+            this.url = buildUrl(instanceSettings.url!, {path: routePathSecure});
+        }
     }
 
     async testDatasource() {
@@ -39,7 +49,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                 (error: FetchError) => {
                     reject({
                         status: 'error',
-                        message: this.generateErrorMessage(error),
+                        message: DataSource.generateErrorMessage(error),
                     });
                 }
             );
@@ -101,7 +111,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                     resolve(response.data);
                 },
                 (error: FetchError) => {
-                    reject(this.generateErrorMessage(error));
+                    reject(DataSource.generateErrorMessage(error));
                 }
             );
         });
@@ -121,7 +131,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                         resolve(response.data.content);
                     },
                     (error: FetchError) => {
-                        reject(this.generateErrorMessage(error));
+                        reject(DataSource.generateErrorMessage(error));
                     }
                 );
             });
@@ -135,7 +145,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                     resolve(response.data);
                 },
                 (error: FetchError) => {
-                    reject(this.generateErrorMessage(error));
+                    reject(DataSource.generateErrorMessage(error));
                 }
             );
         });
@@ -156,7 +166,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                     resolve(keys);
                 },
                 (error: FetchError) => {
-                    reject(this.generateErrorMessage(error));
+                    reject(DataSource.generateErrorMessage(error));
                 }
             );
         });
@@ -174,7 +184,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                     resolve(response.data.content[0]);
                 },
                 (error: FetchError) => {
-                    reject(this.generateErrorMessage(error));
+                    reject(DataSource.generateErrorMessage(error));
                 }
             );
         });
@@ -182,19 +192,16 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
 
     private executeRequest<T>(path: string, method: string, params?: any, data?: any): Observable<FetchResponse<T>> {
         const options: BackendSrvRequest = {
-            url: buildUrl(this.config.baseUrl, { path }),
+            url: buildUrl(this.url!, { path }),
             method,
             params,
             data,
-            headers: {
-                'x-api-key': this.config.apiKey,
-            },
         };
 
         return getBackendSrv().fetch(options);
     }
 
-    private generateErrorMessage(error: FetchError): string {
+    private static generateErrorMessage(error: FetchError): string {
         if (error.status === 401) {
             return '401 Unauthorized - Specified API Key is invalid';
         } else if (error.statusText && error.data?.message) {
