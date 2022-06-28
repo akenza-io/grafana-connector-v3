@@ -34,7 +34,17 @@
     },
     "routes": [
         {
-            "path": "akenza",
+            "path": "akenza-secure",
+            "url": "{{ .JsonData.baseUrl }}",
+            "headers": [
+                {
+                    "name": "x-api-key",
+                    "content": "{{ .SecureJsonData.apiKey }}"
+                }
+            ]
+        },
+        {
+            "path": "akenza-insecure",
             "url": "{{ .JsonData.baseUrl }}",
             "headers": [
                 {

@@ -2,7 +2,7 @@ version: "3.5"
 
 services:
   grafana:
-    image: grafana/grafana:7.5.4
+    image: grafana/grafana:9.0.1
     container_name: 'grafana-connector-grafana'
     volumes:
       - ./dist:/var/lib/grafana/plugins
@@ -11,3 +11,7 @@ services:
       - config/grafana/grafana.config
     ports:
       - "3000:3000"
+    environment:
+        GF_DIAGNOSTICS_TRACING_ENABLED: "true"
+        GF_DIAGNOSTICS_TRACING_FILE: "/tmp/trace.out"
+        GF_PLUGINS_ALLOW_LOADING_UNSIGNED_PLUGINS: "akenza-datasource"
