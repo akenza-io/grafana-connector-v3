@@ -11,7 +11,7 @@ export interface AkenzaQuery extends DataQuery {
 export interface AkenzaDataSourceConfig extends DataSourceJsonData {
     baseUrl: string;
     // the api key property still needs to be left in here as currently configured data sources still use the unencrypted properties...
-    apiKey: string;
+    apiKey: string|null;
     organizationId: string;
 }
 

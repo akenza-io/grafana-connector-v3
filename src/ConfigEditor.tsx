@@ -28,7 +28,7 @@ export class ConfigEditor extends PureComponent<Props, State> {
             // the old api key was stored unencrypted, meaning it'll be set to empty string and from now on only the encrypted property will be used...
             console.info("the api key was stored unencrypted... clearing it from the unencrypted store and storing it encrypted...");
             // not sure if this is the correct way to do these things but calling onOptionsChange(...) twice in a row in short succession leads to some janky behaviour...
-            options.jsonData.apiKey = '';
+            options.jsonData.apiKey = null;
         }
         // store the api key encrypted
         const secureJsonData = {
