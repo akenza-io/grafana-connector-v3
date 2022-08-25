@@ -32,7 +32,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         }
     }
 
-    public async testDatasource() {
+    async testDatasource() {
         return new Promise((resolve, reject) => {
             const params = {
                 size: 1,
@@ -60,7 +60,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         });
     }
 
-    public async query(options: DataQueryRequest<AkenzaQuery>): Promise<DataQueryResponse> {
+    async query(options: DataQueryRequest<AkenzaQuery>): Promise<DataQueryResponse> {
         const from: DateTime = options.range.from;
         const to: DateTime = options.range.to;
         const panelData: MutableDataFrame[] = [];
@@ -100,7 +100,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         return { data: panelData };
     }
 
-    public async getDevices(searchString?: string): Promise<Device[]> {
+    async getDevices(searchString?: string): Promise<Device[]> {
         return this.getOrganization().then((organization) => {
             return new Promise((resolve, reject) => {
                 const params = {
@@ -125,7 +125,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         });
     }
 
-    public async getTopics(deviceId: string): Promise<string[]> {
+    async getTopics(deviceId: string): Promise<string[]> {
         return new Promise((resolve, reject) => {
             this.executeRequest<string[]>(
                 '/v3/devices/' + deviceId + '/query/topics',
@@ -141,7 +141,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         });
     }
 
-    public async getKeys(deviceId: string, topic: string): Promise<string[]> {
+    async getKeys(deviceId: string, topic: string): Promise<string[]> {
         const body = {
             topic: topic,
             limit: 1,
