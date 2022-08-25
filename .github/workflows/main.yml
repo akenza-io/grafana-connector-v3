@@ -34,7 +34,10 @@ jobs:
         run: yarn build
 
       - name: Sign plugin
-        run: npx @grafana/toolkit plugin:sign --rootUrls ${{ secrets.PLUGIN_ROOT_URLS }}
+        # sign plugin for public use
+        run: npx @grafana/toolkit plugin:sign
+        # sign plugin for private use
+        # run: npx @grafana/toolkit plugin:sign --rootUrls ${{ secrets.PLUGIN_ROOT_URLS }}
         env:
           GRAFANA_API_KEY: ${{ secrets.GRAFANA_API_KEY }}
 
