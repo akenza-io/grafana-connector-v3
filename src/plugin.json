@@ -6,7 +6,7 @@
     "info": {
         "description": "Enables Akenza as Data Source",
         "author": {
-            "name": "David Giger",
+            "name": "akenza",
             "url": "https://akenza.io"
         },
         "keywords": ["akenza.io", "akenza", "IoT", "Internet of Things"],
