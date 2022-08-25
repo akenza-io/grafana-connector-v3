@@ -1,7 +1,7 @@
 {
     "name": "akenza-grafana-connector",
-    "version": "0.0.0",
-    "description": "Enables the Akenza as Data Source",
+    "version": "1.0.0",
+    "description": "enables the visualisation of akenza device data in Grafana dashboards",
     "scripts": {
         "build": "grafana-toolkit plugin:build",
         "test": "grafana-toolkit plugin:test",
