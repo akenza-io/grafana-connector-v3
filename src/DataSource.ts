@@ -18,7 +18,7 @@ const routePathSecure = '/akenza-secure';
 const routePathInsecure = '/akenza-insecure';
 
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
-    readonly url: string;
+    private readonly url: string;
 
     constructor(instanceSettings: DataSourceInstanceSettings<AkenzaDataSourceConfig>) {
         super(instanceSettings);
@@ -33,26 +33,30 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
     }
 
     async testDatasource() {
-        const params = {
-            size: 1,
-            minimal: true,
-        };
-
         return new Promise((resolve, reject) => {
-            this.executeRequest<Organization>('/v3/organizations', 'GET', params).subscribe(
-                () => {
-                    resolve({
-                        status: 'success',
-                        message: 'Success',
-                    });
-                },
-                (error: FetchError) => {
-                    reject({
-                        status: 'error',
-                        message: DataSource.generateErrorMessage(error),
-                    });
-                }
-            );
+            const params = {
+                size: 1,
+                minimal: true,
+            };
+
+            this.executeRequest<Organization>(
+                '/v3/organizations',
+                'GET',
+                params)
+                .subscribe({
+                    next() {
+                        resolve({
+                            status: 'success',
+                            message: 'Success',
+                        })
+                    },
+                    error(error: FetchError) {
+                        reject({
+                            status: 'error',
+                            message: DataSource.generateErrorMessage(error),
+                        })
+                    }
+                });
         });
     }
 
@@ -65,17 +69,23 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                 const timeSeriesData = await this.getTimeSeriesData(target, from.toISOString(), to.toISOString());
                 const data: number[] = [];
                 const time: number[] = [];
+                // assemble the time series data to grafana compliant format
                 for (let dataPoint of timeSeriesData.dataPoints) {
                     // first entry in the array is always the value
                     data.push(dataPoint[0]);
-                    // converts the ISO String to unix timestamp
+                    // convert the ISO String to unix timestamp
                     time.push(dateTime(dataPoint[1]).valueOf());
                 }
+                // add the data to the panel
                 panelData.push(
                     new MutableDataFrame({
                         refId: target.refId,
                         fields: [
-                            { name: 'Time', values: time, type: FieldType.time },
+                            {
+                                name: 'Time',
+                                values: time,
+                                type: FieldType.time
+                            },
                             {
                                 name: target.device?.name + ' - ' + target.dataKey,
                                 values: data,
@@ -90,7 +100,74 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         return { data: panelData };
     }
 
-    async getTimeSeriesData(query: AkenzaQuery, from: string, to: string): Promise<TimeSeriesData> {
+    async getDevices(searchString?: string): Promise<Device[]> {
+        return this.getOrganization().then((organization) => {
+            return new Promise((resolve, reject) => {
+                const params = {
+                    organizationId: organization.id,
+                    type: 'DEVICE',
+                    search: searchString,
+                };
+
+                this.executeRequest<DeviceList>(
+                    '/v3/assets',
+                    'GET',
+                    params)
+                    .subscribe({
+                        next(response: FetchResponse<DeviceList>) {
+                            resolve(response.data.content)
+                        },
+                        error(error: FetchError) {
+                            reject(DataSource.generateErrorMessage(error))
+                        }
+                    });
+            });
+        });
+    }
+
+    async getTopics(deviceId: string): Promise<string[]> {
+        return new Promise((resolve, reject) => {
+            this.executeRequest<string[]>(
+                '/v3/devices/' + deviceId + '/query/topics',
+                'GET')
+                .subscribe({
+                    next(response: FetchResponse<string[]>) {
+                        resolve(response.data)
+                    },
+                    error(error: FetchError) {
+                        reject(DataSource.generateErrorMessage(error))
+                    }
+                });
+        });
+    }
+
+    async getKeys(deviceId: string, topic: string): Promise<string[]> {
+        const body = {
+            topic: topic,
+            limit: 1,
+            skip: 0,
+        };
+
+        return new Promise((resolve, reject) => {
+            this.executeRequest<DeviceData[]>(
+                '/v3/devices/' + deviceId + '/query',
+                'POST',
+                null,
+                body)
+                .subscribe({
+                    next(response: FetchResponse<DeviceData[]>) {
+                        const keys: string[] = [];
+                        Object.keys(response.data[0].data).forEach((key) => keys.push(key));
+                        resolve(keys);
+                    },
+                    error(error: FetchError) {
+                        reject(DataSource.generateErrorMessage(error))
+                    }
+                });
+        });
+    }
+
+    private async getTimeSeriesData(query: AkenzaQuery, from: string, to: string): Promise<TimeSeriesData> {
         const body = {
             dataKey: query.dataKey,
             topic: query.topic,
@@ -105,88 +182,37 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                 '/v3/devices/' + query.deviceId + '/query/time-series',
                 'POST',
                 null,
-                body
-            ).subscribe(
-                (response: FetchResponse<TimeSeriesData>) => {
-                    resolve(response.data);
-                },
-                (error: FetchError) => {
-                    reject(DataSource.generateErrorMessage(error));
-                }
-            );
-        });
-    }
-
-    async getDevices(searchString?: string): Promise<Device[]> {
-        return this.getOrganization().then((organization) => {
-            return new Promise((resolve, reject) => {
-                const params = {
-                    organizationId: organization.id,
-                    type: 'DEVICE',
-                    search: searchString,
-                };
-
-                this.executeRequest<DeviceList>('/v3/assets', 'GET', params).subscribe(
-                    (response: FetchResponse<DeviceList>) => {
-                        resolve(response.data.content);
+                body)
+                .subscribe({
+                    next(response: FetchResponse<TimeSeriesData>) {
+                        resolve(response.data)
                     },
-                    (error: FetchError) => {
-                        reject(DataSource.generateErrorMessage(error));
+                    error(error: FetchError) {
+                        reject(DataSource.generateErrorMessage(error))
                     }
-                );
-            });
+                });
         });
     }
 
-    async getTopics(deviceId: string): Promise<string[]> {
-        return new Promise((resolve, reject) => {
-            this.executeRequest<string[]>('/v3/devices/' + deviceId + '/query/topics', 'GET').subscribe(
-                (response: FetchResponse<string[]>) => {
-                    resolve(response.data);
-                },
-                (error: FetchError) => {
-                    reject(DataSource.generateErrorMessage(error));
-                }
-            );
-        });
-    }
-
-    async getKeys(deviceId: string, topic: string): Promise<string[]> {
-        const params = {
-            topic: topic,
-            limit: 1,
-            skip: 0,
-        };
-
-        return new Promise((resolve, reject) => {
-            this.executeRequest<DeviceData[]>('/v3/devices/' + deviceId + '/query', 'POST', null, params).subscribe(
-                (response: FetchResponse<DeviceData[]>) => {
-                    const keys: string[] = [];
-                    Object.keys(response.data[0].data).forEach((key) => keys.push(key));
-                    resolve(keys);
-                },
-                (error: FetchError) => {
-                    reject(DataSource.generateErrorMessage(error));
-                }
-            );
-        });
-    }
-
-    private getOrganization(): Promise<Organization> {
+    private async getOrganization(): Promise<Organization> {
         const params = {
             size: 1,
             minimal: true,
         };
 
         return new Promise((resolve, reject) => {
-            this.executeRequest<DeviceList>('/v3/organizations', 'GET', params).subscribe(
-                (response: FetchResponse<OrganizationList>) => {
-                    resolve(response.data.content[0]);
-                },
-                (error: FetchError) => {
-                    reject(DataSource.generateErrorMessage(error));
-                }
-            );
+            this.executeRequest<DeviceList>(
+                '/v3/organizations',
+                'GET',
+                params)
+                .subscribe({
+                    next(response: FetchResponse<OrganizationList>) {
+                        resolve(response.data.content[0]);
+                    },
+                    error(error: FetchError) {
+                        reject(DataSource.generateErrorMessage(error))
+                    }
+                });
         });
     }
 

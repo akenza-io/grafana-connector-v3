@@ -1,14 +1,12 @@
 export interface Device {
     id: string;
     name: string;
-    // no other properties since the API call is made using the fields param
+    // other properties omitted, because they're not used
 }
 
 export interface DeviceList {
-    offset: number;
-    limit: number;
-    totalElements: number;
     content: Device[];
+    // other properties omitted, because they're not used
 }
 
 export interface DeviceData {
@@ -16,6 +14,7 @@ export interface DeviceData {
     timestamp: string;
     topic: string;
     data: any;
+    // other properties omitted, because they're not used
 }
 
 export interface TimeSeriesData {
@@ -25,11 +24,11 @@ export interface TimeSeriesData {
 
 export interface OrganizationList {
     content: Organization[];
-    // other properties omitted
+    // other properties omitted, because they're not used
 }
 
 export interface Organization {
     id: string;
     name: string;
-    // other properties omitted
+    // other properties omitted, because they're not used
 }
