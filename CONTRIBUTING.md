@@ -4,7 +4,7 @@ Development tips, hints and other useful things.
 
 ## Coding guidelines
 
-
+adhere to the default TypeScript coding guidelines and lint on a regular basis.
 
 ## Getting started
 
