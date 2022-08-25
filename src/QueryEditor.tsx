@@ -9,6 +9,7 @@ import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 type Props = QueryEditorProps<DataSource, AkenzaQuery, AkenzaDataSourceConfig>;
+
 interface Callback {
     (): void;
 }
