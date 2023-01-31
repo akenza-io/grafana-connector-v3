@@ -1,32 +1,34 @@
 import React, { ChangeEvent, PureComponent } from 'react';
 import { LegacyForms } from '@grafana/ui';
 import { DataSourcePluginOptionsEditorProps } from '@grafana/data';
-import {AkenzaDataSourceConfig, AkenzaSecureDataSourceConfig} from './types/PluginTypes';
+import { AkenzaDataSourceConfig, AkenzaSecureDataSourceConfig } from './types/PluginTypes';
 
-const { FormField } = LegacyForms;
+const {FormField} = LegacyForms;
 
-interface Props extends DataSourcePluginOptionsEditorProps<AkenzaDataSourceConfig, AkenzaSecureDataSourceConfig> {}
+interface Props extends DataSourcePluginOptionsEditorProps<AkenzaDataSourceConfig, AkenzaSecureDataSourceConfig> {
+}
 
-interface State {}
+interface State {
+}
 
 export class ConfigEditor extends PureComponent<Props, State> {
 
     onBaseUrlChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const { onOptionsChange, options } = this.props;
+        const {onOptionsChange, options} = this.props;
         const jsonData = {
             ...options.jsonData,
             baseUrl: event.target.value,
         };
-        onOptionsChange({ ...options, jsonData });
+        onOptionsChange({...options, jsonData});
     };
 
     // secure field (only sent to the backend)
     onAPIKeyChange = (event: ChangeEvent<HTMLInputElement>) => {
-        const { onOptionsChange, options } = this.props;
+        const {onOptionsChange, options} = this.props;
         if (options.jsonData.apiKey) {
             // special backwards compatibility thing...
             // the old api key was stored unencrypted, meaning it'll be set to empty string and from now on only the encrypted property will be used...
-            console.info("the api key was stored unencrypted... clearing it from the unencrypted store and storing it encrypted...");
+            console.info('the api key was stored unencrypted... clearing it from the unencrypted store and storing it encrypted...');
             // not sure if this is the correct way to do these things but calling onOptionsChange(...) twice in a row in short succession leads to some janky behaviour...
             options.jsonData.apiKey = null;
         }
@@ -35,12 +37,12 @@ export class ConfigEditor extends PureComponent<Props, State> {
             ...options.secureJsonData,
             apiKey: event.target.value,
         };
-        onOptionsChange({ ...options, secureJsonData });
+        onOptionsChange({...options, secureJsonData});
     };
 
     render() {
-        const { options } = this.props;
-        const { jsonData, secureJsonData, secureJsonFields } = options;
+        const {options} = this.props;
+        const {jsonData, secureJsonData, secureJsonFields} = options;
 
         return (
             <div className="gf-form-group">

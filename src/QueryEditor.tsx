@@ -65,7 +65,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     }
 
     private initializeDeviceSelection(): void {
-        const { query } = this.props;
+        const {query} = this.props;
         // render() is called multiple times, in order to avoid spam calling our API this check has been put into place
         if (!this.state.loadingDevices && this.dataSourceId !== this.props.datasource.id) {
             if (this.dataSourceId !== this.props.datasource.id && this.initialLoadingComplete) {
@@ -103,7 +103,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             (devices: Device[]) => {
                 const deviceSelectOptions: Array<SelectableValue<string>> = [];
                 for (const device of devices) {
-                    deviceSelectOptions.push({ label: device.name, value: device.id, device });
+                    deviceSelectOptions.push({label: device.name, value: device.id, device});
                 }
                 // modify the state
                 this.setState((prevState) => ({
@@ -129,7 +129,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             (topics: string[]) => {
                 let topicsSelectOptions: Array<SelectableValue<string>> = [];
                 for (const topic of topics) {
-                    topicsSelectOptions.push({ label: topic, value: topic });
+                    topicsSelectOptions.push({label: topic, value: topic});
                 }
                 // reset the values only after initial loading was completed, will reset it again otherwise due to react lifecycles
                 if (this.initialLoadingComplete) {
@@ -153,7 +153,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             (keys: string[]) => {
                 let keySelectOptions: Array<SelectableValue<string>> = [];
                 for (const key of keys) {
-                    keySelectOptions.push({ label: key, value: key });
+                    keySelectOptions.push({label: key, value: key});
                 }
                 // reset the values only after initial loading was completed, will reset it again otherwise due to react lifecycles
                 if (this.initialLoadingComplete) {
@@ -187,7 +187,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             topicOptions,
             topicValue,
         } = this.state;
-        const { query } = this.props;
+        const {query} = this.props;
 
         return (
             <div className="gf-form">
@@ -251,7 +251,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     };
 
     onDeviceSelectionChange = (deviceSelection: SelectableValue<string>): void => {
-        const { onChange, query, onRunQuery } = this.props;
+        const {onChange, query, onRunQuery} = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
         if (deviceSelection?.value !== query.deviceId) {
             // modify the query
@@ -275,7 +275,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     };
 
     onTopicSelectionChange = (topicSelection: SelectableValue<string>): void => {
-        const { onChange, query, onRunQuery } = this.props;
+        const {onChange, query, onRunQuery} = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
         if (topicSelection?.value !== query.topic) {
             // modify the query
@@ -298,7 +298,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     };
 
     onDataKeySelectionChange = (dataKeySelection: SelectableValue<string>): void => {
-        const { onChange, query, onRunQuery } = this.props;
+        const {onChange, query, onRunQuery} = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
         if (dataKeySelection?.value !== query.dataKey) {
             // modify the query
@@ -317,7 +317,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     };
 
     private resetAllValues() {
-        const { onChange, query } = this.props;
+        const {onChange, query} = this.props;
         // modify the query
         onChange({
             ...query,
@@ -338,7 +338,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     }
 
     private resetTopicAndDataKeyValues(topicsOptions: Array<SelectableValue<string>>) {
-        const { onChange, query } = this.props;
+        const {onChange, query} = this.props;
 
         onChange({
             ...query,

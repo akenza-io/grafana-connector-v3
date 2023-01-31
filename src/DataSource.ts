@@ -10,7 +10,16 @@ import {
 } from '@grafana/data';
 import { BackendSrvRequest, FetchError, FetchResponse, getBackendSrv } from '@grafana/runtime';
 import buildUrl from 'build-url';
-import { Device, DeviceData, DeviceList, Organization, OrganizationList, TimeSeriesData } from './types/AkenzaTypes';
+import { AkenzaApiKeyOrganizationAccess } from './types/AkenzaApiKeyOrganizationAccess';
+import {
+    InventoryQueryParams,
+    Device,
+    DeviceData,
+    DeviceList,
+    Organization,
+    OrganizationList,
+    TimeSeriesData
+} from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
 import { Observable } from 'rxjs';
 
@@ -19,6 +28,7 @@ const routePathInsecure = '/akenza-insecure';
 
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
     private readonly url: string;
+    private readonly akenzaApiAccess: AkenzaApiKeyOrganizationAccess;
 
     constructor(instanceSettings: DataSourceInstanceSettings<AkenzaDataSourceConfig>) {
         super(instanceSettings);
@@ -26,38 +36,29 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         // check which proxy to use based on whether the unencrypted jsonData contains the api key
         if (instanceSettings.jsonData.apiKey) {
             this.url = buildUrl(instanceSettings.url!, {path: routePathInsecure});
-            console.warn("api key is stored unencrypted! update the data source to store the api key encrypted.")
+            console.warn('api key is stored unencrypted! update the data source to store the api key encrypted.')
         } else {
             this.url = buildUrl(instanceSettings.url!, {path: routePathSecure});
         }
+
+        this.akenzaApiAccess = new AkenzaApiKeyOrganizationAccess(this.url)
     }
 
     async testDatasource() {
-        return new Promise((resolve, reject) => {
-            const params = {
-                size: 1,
-                minimal: true,
+        try {
+            const organization = await this.getOrganization();
+            return {
+                status: 'success',
+                message: 'Connection test successful. Devices from organization "' + organization.name + '" can now be used in Dashboards.',
             };
+        } catch (error) {
+            console.error('an error occurred during organization loading', error);
 
-            this.executeRequest<Organization>(
-                '/v3/organizations',
-                'GET',
-                params)
-                .subscribe({
-                    next() {
-                        resolve({
-                            status: 'success',
-                            message: 'Success',
-                        })
-                    },
-                    error(error: FetchError) {
-                        reject({
-                            status: 'error',
-                            message: DataSource.generateErrorMessage(error),
-                        })
-                    }
-                });
-        });
+            return {
+                status: 'error',
+                message: 'Connection test failed. Verify the inputs and retry.',
+            }
+        }
     }
 
     async query(options: DataQueryRequest<AkenzaQuery>): Promise<DataQueryResponse> {
@@ -97,31 +98,40 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
             }
         }
 
-        return { data: panelData };
+        return {data: panelData};
     }
 
     async getDevices(searchString?: string): Promise<Device[]> {
-        return this.getOrganization().then((organization) => {
-            return new Promise((resolve, reject) => {
-                const params = {
-                    organizationId: organization.id,
-                    type: 'DEVICE',
-                    search: searchString,
-                };
+        const access = await this.akenzaApiAccess.getInstance();
 
-                this.executeRequest<DeviceList>(
-                    '/v3/assets',
-                    'GET',
-                    params)
-                    .subscribe({
-                        next(response: FetchResponse<DeviceList>) {
-                            resolve(response.data.content)
-                        },
-                        error(error: FetchError) {
-                            reject(DataSource.generateErrorMessage(error))
-                        }
-                    });
-            });
+        const params: InventoryQueryParams = {
+            organizationId: undefined,
+            type: 'DEVICE',
+            search: searchString,
+            workspaceIds: undefined,
+        };
+
+        return new Promise((resolve, reject) => {
+            // if the api key has access to all workspaces (no restrictions) the organizationId can directly be provided to query the assets
+            if (access.all) {
+                params.organizationId = access.organizationId
+            } else {
+                // otherwise the filter for workspaceIds is used to restrict the asset-list to only visible devices
+                params.workspaceIds = access.workspaceIds;
+            }
+
+            this.executeRequest<DeviceList>(
+                '/v3/assets',
+                'GET',
+                params)
+                .subscribe({
+                    next(response: FetchResponse<DeviceList>) {
+                        resolve(response.data.content)
+                    },
+                    error(error: FetchError) {
+                        reject(DataSource.generateErrorMessage(error))
+                    }
+                });
         });
     }
 
@@ -218,7 +228,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
 
     private executeRequest<T>(path: string, method: string, params?: any, data?: any): Observable<FetchResponse<T>> {
         const options: BackendSrvRequest = {
-            url: buildUrl(this.url, { path }),
+            url: buildUrl(this.url, {path}),
             method,
             params,
             data,
@@ -227,7 +237,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         return getBackendSrv().fetch(options);
     }
 
-    private static generateErrorMessage(error: FetchError): string {
+    static generateErrorMessage(error: FetchError): string {
         if (error.status === 401) {
             return '401 Unauthorized - Specified API Key is invalid';
         } else if (error.statusText && error.data?.message) {
