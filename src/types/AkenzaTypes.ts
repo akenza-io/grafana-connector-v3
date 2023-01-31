@@ -32,3 +32,15 @@ export interface Organization {
     name: string;
     // other properties omitted, because they're not used
 }
+
+export interface AccessCheckParams {
+    organizationId: undefined | string,
+    type: string,
+    search: undefined | string,
+    workspaceIds: undefined | string[],
+}
+
+export interface AccessCheckResponse {
+    all: boolean;
+    ids: string[];
+}
