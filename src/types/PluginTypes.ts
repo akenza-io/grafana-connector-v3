@@ -12,8 +12,6 @@ export interface AkenzaDataSourceConfig extends DataSourceJsonData {
     baseUrl: string;
     // NOTE: backwards compatibility: the api key property still needs to present, as currently configured data sources still use the unencrypted properties...
     apiKey: string | null;
-    organizationId: string;
-    workspaceIds: string[];
 }
 
 export interface AkenzaSecureDataSourceConfig {
