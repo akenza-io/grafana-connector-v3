@@ -17,7 +17,7 @@ export class AkenzaApiKeyOrganizationAccess {
     }
 
     // singleton implementation for a promise
-    public async getInstance(): Promise<AkenzaApiAccess> {
+    async getInstance(): Promise<AkenzaApiAccess> {
         if (!this.instance) {
             this.instance = this.initializeInstancePromise();
         }

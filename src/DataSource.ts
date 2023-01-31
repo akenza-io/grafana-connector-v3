@@ -237,7 +237,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         return getBackendSrv().fetch(options);
     }
 
-    public static generateErrorMessage(error: FetchError): string {
+    static generateErrorMessage(error: FetchError): string {
         if (error.status === 401) {
             return '401 Unauthorized - Specified API Key is invalid';
         } else if (error.statusText && error.data?.message) {
