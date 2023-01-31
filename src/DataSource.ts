@@ -10,9 +10,9 @@ import {
 } from '@grafana/data';
 import { BackendSrvRequest, FetchError, FetchResponse, getBackendSrv } from '@grafana/runtime';
 import buildUrl from 'build-url';
+import { AkenzaApiKeyOrganizationAccess } from './types/AkenzaApiKeyOrganizationAccess';
 import {
-    AccessCheckParams,
-    AccessCheckResponse,
+    InventoryQueryParams,
     Device,
     DeviceData,
     DeviceList,
@@ -28,6 +28,7 @@ const routePathInsecure = '/akenza-insecure';
 
 export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfig> {
     private readonly url: string;
+    private readonly akenzaApiAccess: AkenzaApiKeyOrganizationAccess;
 
     constructor(instanceSettings: DataSourceInstanceSettings<AkenzaDataSourceConfig>) {
         super(instanceSettings);
@@ -39,6 +40,8 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         } else {
             this.url = buildUrl(instanceSettings.url!, {path: routePathSecure});
         }
+
+        this.akenzaApiAccess = new AkenzaApiKeyOrganizationAccess(this.url)
     }
 
     async testDatasource() {
@@ -99,10 +102,9 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
     }
 
     async getDevices(searchString?: string): Promise<Device[]> {
-        const organization = await this.getOrganization();
-        const access = await this.checkWorkspaceAccess(organization.id);
+        const access = await this.akenzaApiAccess.getInstance();
 
-        const params: AccessCheckParams = {
+        const params: InventoryQueryParams = {
             organizationId: undefined,
             type: 'DEVICE',
             search: searchString,
@@ -110,13 +112,12 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         };
 
         return new Promise((resolve, reject) => {
-            // if the api key has access to all workspaces (no restrictions) the organizationId can directly be provided
-            // to query the assets
+            // if the api key has access to all workspaces (no restrictions) the organizationId can directly be provided to query the assets
             if (access.all) {
-                params.organizationId = organization.id
+                params.organizationId = access.organizationId
             } else {
                 // otherwise the filter for workspaceIds is used to restrict the asset-list to only visible devices
-                params.workspaceIds = access.ids;
+                params.workspaceIds = access.workspaceIds;
             }
 
             this.executeRequest<DeviceList>(
@@ -126,29 +127,6 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
                 .subscribe({
                     next(response: FetchResponse<DeviceList>) {
                         resolve(response.data.content)
-                    },
-                    error(error: FetchError) {
-                        reject(DataSource.generateErrorMessage(error))
-                    }
-                });
-        });
-    }
-
-    async checkWorkspaceAccess(organizationId: string): Promise<AccessCheckResponse> {
-        const params = {
-            organizationId: organizationId,
-            scope: 'ASSET',
-            verb: 'READ'
-        };
-
-        return new Promise((resolve, reject) => {
-            this.executeRequest<AccessCheckResponse>(
-                '/v3/workspace-access',
-                'GET',
-                params)
-                .subscribe({
-                    next(response: FetchResponse<AccessCheckResponse>) {
-                        resolve(response.data)
                     },
                     error(error: FetchError) {
                         reject(DataSource.generateErrorMessage(error))
@@ -259,7 +237,7 @@ export class DataSource extends DataSourceApi<AkenzaQuery, AkenzaDataSourceConfi
         return getBackendSrv().fetch(options);
     }
 
-    private static generateErrorMessage(error: FetchError): string {
+    public static generateErrorMessage(error: FetchError): string {
         if (error.status === 401) {
             return '401 Unauthorized - Specified API Key is invalid';
         } else if (error.statusText && error.data?.message) {

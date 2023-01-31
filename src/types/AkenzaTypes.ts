@@ -33,7 +33,7 @@ export interface Organization {
     // other properties omitted, because they're not used
 }
 
-export interface AccessCheckParams {
+export interface InventoryQueryParams {
     organizationId: undefined | string,
     type: string,
     search: undefined | string,
@@ -43,4 +43,13 @@ export interface AccessCheckParams {
 export interface AccessCheckResponse {
     all: boolean;
     ids: string[];
+}
+
+// interface which defines the available access of an api key
+// organiztionId will always be set
+// can either be "all = true" or "workspaceIds" (in case of workspace restrictions)
+export interface AkenzaApiAccess {
+    organizationId: string;
+    all: boolean;
+    workspaceIds: string[];
 }
