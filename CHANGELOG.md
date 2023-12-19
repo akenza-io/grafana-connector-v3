@@ -1,6 +1,11 @@
 # Akenza Grafana Connector
 
+## [1.0.5]
+
+upgrades Grafana dependencies to v10.x.
+
 ## [1.0.4]
+
 stores the API key encrypted and makes use of the backend proxy to execute requests to akenza. 
 
 existing data sources won't be affected by this change and continue to work as normal.
@@ -20,4 +25,5 @@ sign the plugin for private use for additional grafana instance URLs
 sign the plugin for private use for additional grafana instance URLs
 
 ## [1.0.0]
+
 initial release which provides the functionality to visualize device data stored in akenza in grafana dashboards.
