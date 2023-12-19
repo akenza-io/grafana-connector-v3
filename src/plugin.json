@@ -1,4 +1,5 @@
 {
+    "$schema": "https://raw.githubusercontent.com/grafana/grafana/main/docs/sources/developers/plugins/plugin.schema.json",
     "type": "datasource",
     "name": "Akenza Connector",
     "id": "akenza-datasource",
@@ -9,10 +10,15 @@
             "name": "akenza",
             "url": "https://akenza.io"
         },
-        "keywords": ["akenza.io", "akenza", "IoT", "Internet of Things"],
+        "keywords": [
+            "akenza.io",
+            "akenza",
+            "IoT",
+            "Internet of Things"
+        ],
         "logos": {
-            "small": "img/akenza-badge-light.png",
-            "large": "img/akenza-io-logo.svg"
+            "small": "img/akenza-main-stamp.svg",
+            "large": "img/akenza-main-logo.svg"
         },
         "links": [
             {
@@ -29,7 +35,7 @@
         "updated": "%TODAY%"
     },
     "dependencies": {
-        "grafanaDependency": "7.x.x"
+        "grafanaDependency": ">=7.x.x"
     },
     "routes": [
         {
