@@ -52,13 +52,6 @@ jobs:
                   version: latest
                   args: buildAll
 
-            - name: Warn missing Grafana access policy token
-              run: |
-                  echo Please generate a Grafana access policy token: https://grafana.com/developers/plugin-tools/publish-a-plugin/sign-a-plugin#generate-an-access-policy-token
-                  echo Once done please follow the instructions found here: https://github.com/${{github.repository}}/blob/main/README.md#using-github-actions-release-workflow
-              if: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN == '' }}
-              shell: bash
-
             - name: Sign plugin
               run: npm run sign -- --rootUrls ${{ secrets.PLUGIN_ROOT_URLS }}
               shell: bash
