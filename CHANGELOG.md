@@ -1,8 +1,16 @@
 # Akenza Grafana Connector
 
+## [1.0.7]
+
+fix: upgrades Grafana dependencies to v10.x.
+
+## [1.0.6]
+
+fix: check api key access and query the asset inventory accordingly
+
 ## [1.0.5]
 
-upgrades Grafana dependencies to v10.x.
+fix: cleanup
 
 ## [1.0.4]
 
