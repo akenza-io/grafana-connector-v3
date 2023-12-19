@@ -60,7 +60,7 @@ jobs:
               shell: bash
 
             - name: Sign plugin
-              run: npm run sign --rootUrls ${{ secrets.PLUGIN_ROOT_URLS }}
+              run: npm run sign -- --rootUrls ${{ secrets.PLUGIN_ROOT_URLS }}
               shell: bash
               env:
                   GRAFANA_ACCESS_POLICY_TOKEN: ${{ secrets.GRAFANA_ACCESS_POLICY_TOKEN }}
