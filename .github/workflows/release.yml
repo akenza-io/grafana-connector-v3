@@ -105,7 +105,7 @@ jobs:
 
       - name: Validate plugin
         run: |
-          npx -y @grafana/plugin-validator@latest -sourceCodeUri file://./ ${{ steps.package-plugin.outputs.archive }}
+          npx -y @grafana/plugin-validator@latest -sourceCodeUri file://./ ${{ steps.metadata.outputs.archive }}
         shell: bash
 
       - name: Create Github release
@@ -115,8 +115,8 @@ jobs:
           generate_release_notes: true
           token: ${{ github.token }}
           files: |
-            ./${{ steps.package-plugin.outputs.archive }}
-            ./${{ steps.package-plugin.outputs.archive-sha1sum }}
+            ./${{ steps.metadata.outputs.archive }}
+            ./${{ steps.metadata.outputs.archive-sha1sum }}
           body: |
             **This Github draft release has been created for your plugin.**
 
@@ -130,7 +130,7 @@ jobs:
             - Once logged in click **My Plugins** in the admin navigation
             - Click the **Submit Plugin** button
             - Fill in the Plugin Submission form:
-              - Paste this [.zip asset link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.package-plugin.outputs.archive }}) in the Plugin URL field
-              - Paste this [.zip.sha1 link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.package-plugin.outputs.archive-sha1sum }}) in the SHA1 field
+              - Paste this [.zip asset link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.metadata.outputs.archive }}) in the Plugin URL field
+              - Paste this [.zip.sha1 link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.metadata.outputs.archive-sha1sum }}) in the SHA1 field
 
             If the links above are not working, you must first edit this draft release and publish it.
