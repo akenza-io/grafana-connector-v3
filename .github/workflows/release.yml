@@ -15,15 +15,6 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - name: Package plugin
-        id: 'package-plugin'
-        uses: grafana/plugin-actions/package-plugin@main
-        with:
-          policy_token: ${{ inputs.policy_token }}
-          node-version: '${{ inputs.node-version }}'
-          go-version: '${{ inputs.go-version }}'
-          backend-target: '${{ inputs.backend-target }}'
-
       - uses: actions/checkout@v4
       # adjusted from https://github.com/grafana/plugin-actions/blob/main/build-plugin/action.yml to allow private signing
       # - uses: grafana/plugin-actions/build-plugin@release
@@ -114,22 +105,18 @@ jobs:
 
       - name: Validate plugin
         run: |
-          git clone https://github.com/grafana/plugin-validator
-          pushd ./plugin-validator/pkg/cmd/plugincheck2
-          go install
-          popd
-          plugincheck2 -config ./plugin-validator/config/default.yaml ${{ steps.metadata.outputs.archive }}
+          npx -y @grafana/plugin-validator@latest -sourceCodeUri file://./ ${{ steps.package-plugin.outputs.archive }}
         shell: bash
 
       - name: Create Github release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           draft: true
           generate_release_notes: true
           token: ${{ github.token }}
           files: |
-            ./${{ steps.metadata.outputs.archive }}
-            ./${{ steps.metadata.outputs.archive-sha1sum }}
+            ./${{ steps.package-plugin.outputs.archive }}
+            ./${{ steps.package-plugin.outputs.archive-sha1sum }}
           body: |
             **This Github draft release has been created for your plugin.**
 
@@ -138,11 +125,12 @@ jobs:
             If you would like to submit this release to Grafana please consider the following steps:
 
             - Check the Validate plugin step in the [release workflow](https://github.com/${{github.repository}}/commit/${{github.sha}}/checks/${{github.run_id}}) for any warnings that need attention
+            - **Edit this draft release**, adjust these notes accordingly and click **Publish Release**
             - Navigate to https://grafana.com/auth/sign-in/ to sign into your account
             - Once logged in click **My Plugins** in the admin navigation
             - Click the **Submit Plugin** button
             - Fill in the Plugin Submission form:
-              - Paste this [.zip asset link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.metadata.outputs.archive }}) in the Plugin URL field
-              - Paste this [.zip.sha1 link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.metadata.outputs.archive-sha1sum }}) in the SHA1 field
+              - Paste this [.zip asset link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.package-plugin.outputs.archive }}) in the Plugin URL field
+              - Paste this [.zip.sha1 link](https://github.com/${{ github.repository }}/releases/download/v${{ steps.metadata.outputs.plugin-version }}/${{ steps.package-plugin.outputs.archive-sha1sum }}) in the SHA1 field
 
-            Once done please remove these instructions and publish this release.
+            If the links above are not working, you must first edit this draft release and publish it.
