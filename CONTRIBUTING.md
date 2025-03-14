@@ -60,6 +60,7 @@ grafana/grafana:7.5.4
 ## Releasing
 
 ```
+npm version patch --no-git-tag-version
 export VERSION=v1.0.8
 git tag $VERSION
 git push origin --tags
