@@ -1,6 +1,6 @@
 import React, { PureComponent } from 'react';
-import { HorizontalGroup, Select } from '@grafana/ui';
-import { QueryEditorProps, SelectableValue } from '@grafana/data';
+import { Combobox, ComboboxOption, Stack } from '@grafana/ui';
+import { QueryEditorProps } from '@grafana/data';
 import { DataSource } from './DataSource';
 import { Device } from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
@@ -16,7 +16,7 @@ interface Callback {
 
 export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     private initialLoadingComplete = false;
-    private dataSourceId: number;
+    private dataSourceId: string;
     private search = new Subject<string>();
 
     constructor(props: Props) {
@@ -24,17 +24,17 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         const query = this.props.query;
         // initialize the select values and their options if the panel has been saved before, will initialize empty otherwise
         const deviceSelectValue = {
-            label: query.device?.name || undefined,
-            value: query.deviceId || null,
-            device: query.device,
+            label: query.device?.name || "",
+            value: query.deviceId || ""
         };
+    
         const topicSelectValue = {
-            label: query.topic,
-            value: query.topic || null,
+            label: query.topic || "",
+            value: query.topic || "",
         };
         const dataKeySelectValue = {
-            label: query.dataKey,
-            value: query.dataKey || null,
+            label: query.dataKey || "",
+            value: query.dataKey || "",
         };
         // initialize the state
         this.state = {
@@ -47,11 +47,12 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             loadingDevices: false,
             loadingTopics: false,
             loadingDataKeys: false,
+            devices: []
         };
         // other view initializations
         this.initializeDeviceSelection();
         this.initializeSearchInputSubscription();
-        this.dataSourceId = this.props.datasource.id;
+        this.dataSourceId = this.props.datasource.uid;
     }
 
     private initializeSearchInputSubscription(): void {
@@ -67,10 +68,10 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     private initializeDeviceSelection(): void {
         const {query} = this.props;
         // render() is called multiple times, in order to avoid spam calling our API this check has been put into place
-        if (!this.state.loadingDevices && this.dataSourceId !== this.props.datasource.id) {
-            if (this.dataSourceId !== this.props.datasource.id && this.initialLoadingComplete) {
+        if (!this.state.loadingDevices && this.dataSourceId !== this.props.datasource.uid) {
+            if (this.dataSourceId !== this.props.datasource.uid && this.initialLoadingComplete) {
                 this.resetAllValues();
-                this.dataSourceId = this.props.datasource.id;
+                this.dataSourceId = this.props.datasource.uid;
             }
             // load the device list
             this.queryDevicesAndAssembleSelectionOptions(undefined, false, () => {
@@ -101,14 +102,16 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
 
         this.props.datasource.getDevices(searchString).then(
             (devices: Device[]) => {
-                const deviceSelectOptions: Array<SelectableValue<string>> = [];
+                const deviceSelectOptions: Array<ComboboxOption<string>> = [];
                 for (const device of devices) {
-                    deviceSelectOptions.push({label: device.name, value: device.id, device});
+                    deviceSelectOptions.push({label: device.name, value: device.id});
                 }
+        
                 // modify the state
                 this.setState((prevState) => ({
                     ...prevState,
                     deviceOptions: deviceSelectOptions,
+                    devices: devices
                 }));
                 // execute the callback if set
                 if (callback) {
@@ -127,7 +130,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         this.setLoadingTopicsState(true);
         this.props.datasource.getTopics(deviceId).then(
             (topics: string[]) => {
-                let topicsSelectOptions: Array<SelectableValue<string>> = [];
+                let topicsSelectOptions: Array<ComboboxOption<string>> = [];
                 for (const topic of topics) {
                     topicsSelectOptions.push({label: topic, value: topic});
                 }
@@ -151,7 +154,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         this.setLoadingDataKeysState(true);
         this.props.datasource.getKeys(deviceId, topic).then(
             (keys: string[]) => {
-                let keySelectOptions: Array<SelectableValue<string>> = [];
+                let keySelectOptions: Array<ComboboxOption<string>> = [];
                 for (const key of keys) {
                     keySelectOptions.push({label: key, value: key});
                 }
@@ -160,7 +163,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                     this.setState((prevState) => ({
                         ...prevState,
                         dataKeyOptions: keySelectOptions,
-                        dataKeyValue: {},
+                        dataKeyValue: { label: "", value: ""},
                     }));
                 }
                 if (callback) {
@@ -191,74 +194,58 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
 
         return (
             <div className="gf-form">
-                <HorizontalGroup spacing={'md'} wrap={true}>
-                    <HorizontalGroup spacing={'none'}>
+                <Stack wrap={true}>
+                    <Stack>
                         <div className="gf-form-label">Device:</div>
-                        <Select
-                            menuPlacement={'bottom'}
-                            isLoading={loadingDevices}
+                        <Combobox
+                            loading={loadingDevices}
                             placeholder={'Select a device'}
-                            noOptionsMessage={'No devices available'}
                             options={deviceOptions}
                             value={deviceValue}
                             onChange={this.onDeviceSelectionChange}
                             width={48}
-                            onInputChange={this.onDeviceInputChange}
                         />
-                    </HorizontalGroup>
-                    <HorizontalGroup spacing={'none'}>
+                    </Stack>
+                    <Stack>
                         <div className="gf-form-label">Topic:</div>
-                        <Select
-                            menuPlacement={'bottom'}
+                        <Combobox
                             disabled={!query.deviceId}
-                            isLoading={loadingTopics}
+                            loading={loadingTopics}
                             placeholder={'Select a topic'}
-                            noOptionsMessage={'No topics available'}
                             options={topicOptions}
                             value={topicValue}
                             onChange={this.onTopicSelectionChange}
                             width={24}
                         />
-                    </HorizontalGroup>
-                    <HorizontalGroup spacing={'none'}>
+                    </Stack>
+                    <Stack>
                         <div className="gf-form-label">Data Key:</div>
-                        <Select
-                            menuPlacement={'bottom'}
+                        <Combobox
                             disabled={!query.topic}
-                            isLoading={loadingDataKeys}
+                            loading={loadingDataKeys}
                             placeholder={'Select a data key'}
-                            noOptionsMessage={'No data keys available'}
                             options={dataKeyOptions}
                             value={dataKeyValue}
                             onChange={this.onDataKeySelectionChange}
                             width={24}
                         />
-                    </HorizontalGroup>
-                </HorizontalGroup>
+                    </Stack>
+                </Stack>
             </div>
         );
     }
 
-    onDeviceInputChange = (searchString: string): void => {
-        // only set the loading state if the search string is present
-        // due to react lifecycles this triggers if the user leaves the input field (which loads the initial list again)
-        // in order to not show the loading indicator at that point, it is simply not modified if the search string is empty
-        if (searchString) {
-            this.setLoadingDevicesState(true);
-        }
-        // emit the search string in the search subject
-        this.search.next(searchString);
-    };
-
-    onDeviceSelectionChange = (deviceSelection: SelectableValue<string>): void => {
+    onDeviceSelectionChange = (deviceSelection: ComboboxOption<string>): void => {
         const {onChange, query, onRunQuery} = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
         if (deviceSelection?.value !== query.deviceId) {
+            
+            const device = this.state.devices.find((d: Device)  => d.id === deviceSelection?.value)
             // modify the query
             onChange({
                 ...query,
                 deviceId: deviceSelection?.value,
-                device: deviceSelection?.device,
+                device: device
             });
             // modify the state
             this.setState((prevState) => ({
@@ -274,7 +261,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         }
     };
 
-    onTopicSelectionChange = (topicSelection: SelectableValue<string>): void => {
+    onTopicSelectionChange = (topicSelection: ComboboxOption<string>): void => {
         const {onChange, query, onRunQuery} = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
         if (topicSelection?.value !== query.topic) {
@@ -297,7 +284,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         }
     };
 
-    onDataKeySelectionChange = (dataKeySelection: SelectableValue<string>): void => {
+    onDataKeySelectionChange = (dataKeySelection: ComboboxOption<string>): void => {
         const {onChange, query, onRunQuery} = this.props;
         // check if the same value was selected again (no need to re-trigger any updates in this case)
         if (dataKeySelection?.value !== query.dataKey) {
@@ -328,16 +315,16 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         });
         // reset the state
         this.setState({
-            deviceValue: {},
+            deviceValue: undefined,
             deviceOptions: [],
-            topicValue: {},
+            topicValue: undefined,
             topicOptions: [],
-            dataKeyValue: {},
+            dataKeyValue: undefined,
             dataKeyOptions: [],
         });
     }
 
-    private resetTopicAndDataKeyValues(topicsOptions: Array<SelectableValue<string>>) {
+    private resetTopicAndDataKeyValues(topicsOptions: Array<ComboboxOption<string>>) {
         const {onChange, query} = this.props;
 
         onChange({
@@ -348,9 +335,9 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
 
         this.setState((prevState) => ({
             ...prevState,
-            topicValue: {},
+            topicValue: undefined,
             topicOptions: topicsOptions,
-            dataKeyValue: {},
+            dataKeyValue: undefined,
             dataKeyOptions: [],
         }));
     }
