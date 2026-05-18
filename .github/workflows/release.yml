@@ -15,7 +15,7 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       # adjusted from https://github.com/grafana/plugin-actions/blob/main/build-plugin/action.yml to allow private signing
       # - uses: grafana/plugin-actions/build-plugin@release
       - uses: actions/setup-node@2028fbc5c25fe9cf00d9f06a71cc4710d4507903 # v6.0.0
