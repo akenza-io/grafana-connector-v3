@@ -11,13 +11,13 @@ adhere to the default TypeScript coding guidelines and lint on a regular basis.
 1. Install the dependencies
 
 ```BASH
-yarn install
+npm install
 ```
 
 2. Run in `watch mode`
 
 ```BASH
-yarn watch
+npm watch
 ```
 
 3. Start the docker-compose Grafana instance
