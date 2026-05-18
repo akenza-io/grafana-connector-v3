@@ -1,13 +1,15 @@
-import { SelectableValue } from '@grafana/data';
+import { Device } from './AkenzaTypes';
+import { ComboboxOption } from '@grafana/ui';
 
 export interface QueryEditorState {
-    deviceValue: SelectableValue;
-    deviceOptions: SelectableValue[];
-    topicValue?: SelectableValue;
-    topicOptions: SelectableValue[];
-    dataKeyValue?: SelectableValue;
-    dataKeyOptions: SelectableValue[];
+    deviceValue?: ComboboxOption;
+    deviceOptions: ComboboxOption[];
+    topicValue?: ComboboxOption;
+    topicOptions: ComboboxOption[];
+    dataKeyValue?: ComboboxOption;
+    dataKeyOptions: ComboboxOption[];
     loadingDevices: boolean;
     loadingTopics: boolean;
     loadingDataKeys: boolean;
+    devices: Device[]
 }
