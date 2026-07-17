@@ -5,8 +5,6 @@ import { DataSource } from './DataSource';
 import { Device } from './types/AkenzaTypes';
 import { AkenzaDataSourceConfig, AkenzaQuery } from './types/PluginTypes';
 import { QueryEditorState } from './types/Utils';
-import { Subject } from 'rxjs';
-import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
 
 type Props = QueryEditorProps<DataSource, AkenzaQuery, AkenzaDataSourceConfig>;
 
@@ -17,7 +15,6 @@ interface Callback {
 export class QueryEditor extends PureComponent<Props, QueryEditorState> {
     private initialLoadingComplete = false;
     private dataSourceId: string;
-    private search = new Subject<string>();
 
     constructor(props: Props) {
         super(props);
@@ -51,18 +48,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         };
         // other view initializations
         this.initializeDeviceSelection();
-        this.initializeSearchInputSubscription();
         this.dataSourceId = this.props.datasource.uid;
-    }
-
-    private initializeSearchInputSubscription(): void {
-        this.search
-            // wait for 250ms after the user has finished typing
-            .pipe(debounceTime(250), distinctUntilChanged())
-            // subscribe and update the device options
-            .subscribe((searchString) => {
-                this.queryDevicesAndAssembleSelectionOptions(searchString, true);
-            });
     }
 
     private initializeDeviceSelection(): void {
@@ -126,6 +112,17 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
         );
     }
 
+    // called by the Combobox when it opens and on every keystroke, with the current search query
+    private loadDeviceOptions = (searchString: string): Promise<Array<ComboboxOption<string>>> => {
+        return this.props.datasource.getDevices(searchString).then((devices: Device[]) => {
+            this.setState((prevState) => ({
+                ...prevState,
+                devices,
+            }));
+            return devices.map((device) => ({ label: device.name, value: device.id }));
+        });
+    };
+
     private loadTopicsAndAssembleSelectionOptions(deviceId: string, callback?: Callback): void {
         this.setLoadingTopicsState(true);
         this.props.datasource.getTopics(deviceId).then(
@@ -183,7 +180,6 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
             loadingDevices,
             loadingTopics,
             loadingDataKeys,
-            deviceOptions,
             deviceValue,
             dataKeyOptions,
             dataKeyValue,
@@ -200,7 +196,7 @@ export class QueryEditor extends PureComponent<Props, QueryEditorState> {
                         <Combobox
                             loading={loadingDevices}
                             placeholder={'Select a device'}
-                            options={deviceOptions}
+                            options={this.loadDeviceOptions}
                             value={deviceValue}
                             onChange={this.onDeviceSelectionChange}
                             width={48}
